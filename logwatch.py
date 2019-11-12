@@ -6,8 +6,11 @@ import os
 import queue
 import time
 import pdb
+import requests
+import json
+import threading
 
-#original_elect_vhost_send local_node_id:010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3 chain_hash:3340835543 chain_msgid:655361 chain_msg_size:1382 send_timestamp:1573547735068 src_node_id:67000000ff7fff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716 dest_node_id:67000000ff7fff7fffffffffffffffff0000000061d1343f82769c3eff69c5448e7b1fe5 is_root:0 broadcast:0
+#xnetwork-08:35:49.631-T1719:[Keyfo]-(elect_vhost.cc: HandleRumorMessage:381): original_elect_vhost_send local_node_id:010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3 chain_hash:3340835543 chain_msgid:655361 chain_msg_size:1382 send_timestamp:1573547735068 src_node_id:67000000ff7fff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716 dest_node_id:67000000ff7fff7fffffffffffffffff0000000061d1343f82769c3eff69c5448e7b1fe5 is_root:0 broadcast:0
 
 #xnetwork-08:35:49.631-T1719:[Keyfo]-(elect_vhost.cc: HandleRumorMessage:381): final_handle_rumor local_node_id:010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3 chain_hash:771962061 chain_msgid:655361 packet_size:608 chain_msg_size:196 hop_num:1 recv_timestamp:1573547749646 src_node_id:690000010140ff7fffffffffffffffff000000009aee88245d7e31e7abaab1ac9956d5a0 dest_node_id:690000010140ff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716 is_root:0 broadcast:0
 
@@ -29,12 +32,12 @@ def print_queue():
 def grep_log(line):
     global SENDQ, RECVQ
     try:
+        #print('line: {0}'.format(line))
         send_flag = False if (line.find('original_elect_vhost') == -1) else True
         recv_flag = False if (line.find('final_handle_rumor') == -1) else True
         if not send_flag and not recv_flag:
             return SENDQ.qsize(), RECVQ.qsize()
 
-        #print('line {0} : {1}'.format(line_num, line))
         
         packet_info = {}
         local_node_id_index  = line.find('local_node_id') 
@@ -71,11 +74,13 @@ def watchlog(filename, offset = 0):
     #log_handle.seek(0, 2)   # go to end
     log_handle.seek(offset, 0)   # go to offset from head
     cur_pos = log_handle.tell()
+    print("1")
     while True:
         cur_pos = log_handle.tell()
         try:
             line = log_handle.readline()
-        except Exception:
+        except Exception as e:
+            print("readline exception:{0}, cur_pos:{1}".format(e, cur_pos))
             continue
         if not line:
             wait_num += 1
@@ -90,6 +95,7 @@ def watchlog(filename, offset = 0):
             send_size, recv_size = grep_log(line)
             wait_num = 0
 
+    print("2")
     # judge new file "$filename" created
     if not os.path.exists(filename):
         return cur_pos
@@ -107,15 +113,117 @@ def watchlog(filename, offset = 0):
     print("new file: {0} created".format(filename))
     return 0
 
-def run_watch():
+def run_watch(filename = './xtop.log'):
     global SENDQ, RECVQ
     clear_queue()
-    filename = './xtop.log'
     offset = 0
     while True:
         time.sleep(1)
         offset = watchlog(filename, offset)
-        print("grep_log finish, sendq.size = {0} recvq.size = {1}".format(SENDQ.qsize(), RECVQ.qsize()))
+        print("grep_log finish, sendq.size = {0} recvq.size = {1}, offset = {2}".format(SENDQ.qsize(), RECVQ.qsize(), offset))
+
+def do_alarm(alarm_list):
+    url = 'http://127.0.0.1:5000/api/alarm/'
+    my_headers = {
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36',
+            'Content-Type': 'application/json;charset=UTF-8',
+            }
+    my_data = json.dumps(alarm_list)
+    try:
+        res = requests.post(url, headers = my_headers,data = my_data, timeout = 5)
+        if res.status_code == 200:
+            if res.json().get('status') == 0:
+                #slog.info("send alarm ok, response: {0}".format(res.text))
+                print("send alarm ok, response: {0}".format(res.text))
+            else:
+                #slog.info("send alarm fail, response: {0}".format(res.text))
+                print("send alarm fail, response: {0}".format(res.text))
+        else:
+            #slog.warn('send alarm fail: {0}'.format(res.text))
+            print('send alarm fail: {0}'.format(res.text))
+    except Exception as e:
+        #slog.error("exception: {0}".format(e))
+        print("exception: {0}".format(e))
+
+    return
+
+
+
+def consumer_send():
+    global SENDQ, RECVQ
+    alarm_list = []
+    while True:
+        try:
+            time.sleep(1)
+            while not SENDQ.empty():
+                print("consumer_send size: {0}".format(SENDQ.qsize()))
+                if len(alarm_list) >= 10:
+                    print("send do_alarm")
+                    do_alarm(alarm_list)
+                    alarm_list.clear()
+
+                packet_info = SENDQ.get()
+                alarm_list.append(packet_info)
+        except Exception as e:
+            pass
+
+def consumer_recv():
+    global SENDQ, RECVQ
+    alarm_list = []
+    while True:
+        try:
+            time.sleep(1)
+            while not RECVQ.empty():
+                print("consumer_recv size: {0}".format(RECVQ.qsize()))
+                if len(alarm_list) >= 10:
+                    print("recv do_alarm")
+                    do_alarm(alarm_list)
+                    alarm_list.clear()
+
+                packet_info = RECVQ.get()
+                alarm_list.append(packet_info)
+        except Exception as e:
+            pass
+
+def consumer_recv_test():
+    global SENDQ, RECVQ
+    alarm_list = []
+    while True:
+        try:
+            time.sleep(1)
+            while not RECVQ.empty():
+                print("consumer_recv size: {0}".format(RECVQ.qsize()))
+                if len(alarm_list) >= 10:
+                    print("recv do_alarm")
+                    do_alarm(alarm_list)
+                    alarm_list.clear()
+
+                packet_info = RECVQ.get()
+                alarm_list.append(packet_info)
+        except Exception as e:
+            pass
+
+
+
     
 if __name__ == "__main__":
-    run_watch()
+    filename = './xtop.log'
+    #run_watch(filename)
+
+    watchlog_th = threading.Thread(target = run_watch, args = (filename, ))
+    watchlog_th.start()
+    print("start watchlog thread")
+
+    con_send_th = threading.Thread(target = consumer_send)
+    con_send_th.start()
+    print("start consumer_send thread")
+
+
+    con_recv_th = threading.Thread(target = consumer_recv)
+    con_recv_th.start()
+    print("start consumer_recv thread")
+
+    print('main thread wait...')
+    watchlog_th.join()
+    con_send_th.join()
+    con_recv_th.join()

@@ -19,7 +19,8 @@ def append_log(filename = './xtop.log'):
         else:
             F.write(line2)
             print('write2')
-        time.sleep(0.2)
+        F.flush()
+        time.sleep(0.3)
         index += 1
     F.close()
 
