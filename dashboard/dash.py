@@ -19,11 +19,9 @@ import uuid
 import time
 import base64
 import copy
-import core
 import threading
 
 app = Flask(__name__)
-alarm_entity = core.Alarm()
 
 
 @app.route('/')
@@ -34,37 +32,6 @@ def hello_world():
 @app.route('/index/', methods=['GET'])
 def index():
     return 'Hello, World!'
-
-
-
-#告警上报(发包收包情况收集)
-@app.route('/api/alarm/', methods=['POST'])
-@app.route('/api/alarm', methods=['POST'])
-def alarm_report():
-    if not request.is_json:
-        payload = json.loads(request.data)
-    else:
-        payload = request.get_json()
-
-    ret = {'status':''}
-    status_ret = {
-            0:'OK',
-            -1:'上报字段不合法,部分可能上传失败',
-            -2:'格式转化出错，请检查字段数或者字段格式等'
-            }
-    if len(payload) <= 0:
-        ret = {'status': -2, 'error': status_ret.get(-2)}
-        return jsonify(ret)
-
-    first_item = payload[0]
-    if not first_item.get('local_node_id'):   #TODO(smaug)
-        ret = {'status': -1, 'error': status_ret.get(-1)}
-        return jsonify(ret)
-
-    print("recv {0} alarm:{1}".format(len(payload), json.dumps(payload[0])))
-    alarm_entity.handle_alarm(payload)
-    ret = {'status': 0, 'error': status_ret.get(0)}
-    return jsonify(ret)
 
 @app.route('/api/web/hash/<chain_hash>/', methods = ['GET'])
 @app.route('/api/web/hash/<chain_hash>', methods = ['GET'])
@@ -86,7 +53,9 @@ def alarm_query(chain_hash):
         return jsonify(ret)
 
     print("query hash: {0}".format(chain_hash))
-    packet_info = alarm_entity.get_chain_hash(chain_hash)
+    #TODO(smaug) get hash
+    #packet_info = alarm_entity.get_chain_hash(chain_hash)
+    packet_info = {}
     if not packet_info:
         ret = {'status': -1, 'error': status_ret.get(-1)}
         return jsonify(ret)
@@ -95,11 +64,7 @@ def alarm_query(chain_hash):
 
 
 def run():
-    global alarm_th
-    alarm_th = threading.Thread(target = alarm_entity.consume_alarm)
-    alarm_th.start()
-    app.run(host="0.0.0.0", port= 9090, debug=True)
-    alarm_th.join()
+    app.run(host="0.0.0.0", port= 8080, debug=True)
 
 
 

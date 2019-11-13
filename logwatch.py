@@ -123,7 +123,7 @@ def run_watch(filename = './xtop.log'):
         print("grep_log finish, sendq.size = {0} recvq.size = {1}, offset = {2}".format(SENDQ.qsize(), RECVQ.qsize(), offset))
 
 def do_alarm(alarm_list):
-    url = 'http://127.0.0.1:5000/api/alarm/'
+    url = 'http://127.0.0.1:9090/api/alarm/'
     my_headers = {
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36',
             'Content-Type': 'application/json;charset=UTF-8',
