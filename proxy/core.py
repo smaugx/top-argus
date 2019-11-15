@@ -36,7 +36,8 @@ class Alarm(object):
                 'send_node_id': '',
                 'src_node_id': '',
                 'dest_node_id': '',
-                'recv_nodes_id': [],
+                'recv_nodes_id': [],   # HexSubstr
+                'recv_nodes_ip': [],   # nodeip
                 'recv_nodes_num': 0,
                 'hop_num': {
                 '0_5':0,
