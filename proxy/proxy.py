@@ -61,8 +61,9 @@ def alarm_report():
         ret = {'status': -1, 'error': status_ret.get(-1)}
         return jsonify(ret)
 
-    print("recv {0} alarm:{1}".format(len(payload), json.dumps(payload[0])))
-    alarm_entity.handle_alarm(payload)
+    alarm_ip = request.remote_addr
+    print("recv ip:{0} {1} alarm:{2}".format(alarm_ip, len(payload), json.dumps(payload[0])))
+    alarm_entity.handle_alarm(payload, alarm_ip)
     ret = {'status': 0, 'error': status_ret.get(0)}
     return jsonify(ret)
 
@@ -96,8 +97,14 @@ def alarm_query(chain_hash):
 
 def run():
     global alarm_th
+    # thread handle alarm and merge packet_info
     alarm_th = threading.Thread(target = alarm_entity.consume_alarm)
     alarm_th.start()
+
+    # thread dump to db
+    dumpdb_th = threading.Thread(target = alarm_entity.dump_db)
+    dumpdb_th.start()
+
     app.run(host="0.0.0.0", port= 9090, debug=True)
     alarm_th.join()
 

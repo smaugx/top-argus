@@ -7,6 +7,7 @@ import time
 import queue
 import copy
 import threading
+from database.packet_sql import PacketInfoSql, PacketRecvInfoSql
 
 
 #{"local_node_id": "010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3", "chain_hash": "4165143189", "chain_msgid": "655361", "chain_msg_size": "9184", "send_timestamp": "1573547749649", "src_node_id": "690000010140ff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716", "dest_node_id": "690000010140ff7fffffffffffffffff000000009aee88245d7e31e7abaab1ac9956d5a0", "is_root": "0", "broadcast": "0"}
@@ -15,6 +16,7 @@ import threading
 
 class Alarm(object):
     def __init__(self):
+        # lock of packet_info_cache_ and packet_info_chain_hash_
         self.packet_info_lock_ = threading.Lock()
         # key is chain_hash, value is packet_info
         self.packet_info_cache_ = {}
@@ -22,7 +24,11 @@ class Alarm(object):
         self.packet_info_chain_hash_ = []
         
         # store packet_info from /api/alarm
-        self.alarm_queue_ = queue.Queue(10000) 
+        self.alarm_queue_ = queue.Queue(100000) 
+
+        # init db obj
+        self.packet_info_sql = PacketInfoSql()
+        self.packet_recv_info_sql = PacketRecvInfoSql()
         
         #template of packet_info
         self.template_packet_info_ = {
@@ -54,31 +60,42 @@ class Alarm(object):
                 },
             }
         
+    def put_queue(self, item):
+        try:
+            self.alarm_queue_.put(item, block=True, timeout = 2)
+        except Exception as e:
+            print("put queue exception:{0}".format(e))
+            return False
+        return True
 
     # handle alarm 
-    def handle_alarm(self, alarm_list):
+    def handle_alarm(self, alarm_list, alarm_ip):
         if not alarm_list:
             return
     
         for item in alarm_list:
-            self.alarm_queue_.put(item, block=True, timeout = 2)
+            item['public_ip'] = alarm_ip
+            self.put_queue(item)
         print("put {0} alarm in queue, now size is {1}".format(len(alarm_list), self.alarm_queue_.qsize()))
         return
     
     def consume_alarm(self):
         while True:
-            time.sleep(1)
+            time.sleep(3)
             try:
                 print("consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize()))
-                while not self.alarm_queue_.empty():
+                #while not self.alarm_queue_.empty():
+                while self.alarm_queue_.qsize() > 0:
                     #add lock
                     with self.packet_info_lock_:
+                        print("begin consume, queue size: {0}".format(self.alarm_queue_.qsize()))
                         packet_info = self.alarm_queue_.get()
                         chain_hash = int(packet_info.get('chain_hash'))
                         if not packet_info.get('send_timestamp'): # recv info
                             if not self.packet_info_cache_.get(chain_hash):
                                 # this is recv info,and befor send info, put it in end of queue again
-                                self.alarm_queue_.put(packet_info, block=True, timeout=2)
+                                #TODO(smaug)
+                                #self.alarm_queue_.put(packet_info, block=True, timeout=2)
                                 continue
                             else: #recv info and after send info
                                 cache_packet_info = self.packet_info_cache_.get(chain_hash)
@@ -88,6 +105,7 @@ class Alarm(object):
                                     continue
     
                                 cache_packet_info['recv_nodes_id'].append(packet_info.get('local_node_id'))
+                                cache_packet_info['recv_nodes_ip'].append(packet_info.get('public_ip'))
                                 cache_packet_info['packet_size'] = (cache_packet_info.get('packet_size') * cache_packet_info.get('recv_nodes_num') + int(packet_info.get('packet_size'))) / (cache_packet_info.get('recv_nodes_num') + 1)
                                 cache_packet_info['recv_nodes_num'] += 1
                                 hop_num  = int(packet_info.get('hop_num'))
@@ -140,23 +158,79 @@ class Alarm(object):
 
     def dump_db(self):
         while True:
+            print("dump_db")
             with self.packet_info_lock_:
                 now = int(time.time() * 1000)
+                tmp_remove_chain_hash_list = []  # keep ready to remove chain_hash
+                print("chain_hash size: {0}".format(len(self.packet_info_chain_hash_)))
                 for chain_hash in self.packet_info_chain_hash_:
                     cache_packet_info = self.packet_info_cache_.get(chain_hash)
+                    if not cache_packet_info:
+                        tmp_remove_chain_hash_list.append(chain_hash)
+                        continue
+
+                    print('chain_hash{0} cache_packet_info: {1}'.format(chain_hash, json.dumps(cache_packet_info)))
                     send_timestamp = cache_packet_info.get('send_timestamp')
-                    if (now - send_timestamp) < 5 * 60 * 1000:
+                    if now < send_timestamp:
+                        print("send_timestamp invalid: {0}".format(send_timestamp))
+                        del self.packet_info_cache_[chain_hash]
+                        tmp_remove_chain_hash_list.append(chain_hash)
+
+                    if (now - send_timestamp) < 2 * 60 * 1000:
                         # keep latest 5 min
+                        print("not expired,keep in list")
                         break
 
                     #TODO(smaug) store cache_packet_info to db
+                    recv_nodes_id = cache_packet_info.pop('recv_nodes_id')  # store in table: packet_recv_info_table
+                    recv_nodes_ip = cache_packet_info.pop('recv_nodes_ip')  # store in table: packet_recv_info_table
+                    if len(recv_nodes_id) != len(recv_nodes_ip):
+                        print("recv_nodes_id size:{0} not equal recv_nodes_ip size:{1}".format(len(recv_nodes_id), len(recv_nodes_ip)))
+                        del self.packet_info_cache_[chain_hash]
+                        tmp_remove_chain_hash_list.append(chain_hash)
+                        continue
+
+                    for nid,nip in zip(recv_nodes_id, recv_nodes_ip):
+                        tmp_db_data = {
+                                'chain_hash': chain_hash,
+                                'recv_node_id': nid,
+                                'recv_node_ip': nip
+                                }
+                        print('ready dump to db of chain_hash recv_node:{0}'.format(json.dumps(tmp_db_data)))
+                        self.packet_recv_info_sql.insert_to_db(tmp_db_data)
+
+                    '''
+                    'hop_num': {'0_5':0,'5_10':0,'10_15':0,'20_':0}
+                    'taking': {'0.0_0.5':0,'0.5_1.0':0,'1.0_1.5':0,'1.5_2.0':0,'2.0_':0}
+                    '''
+                    hop_num = cache_packet_info.pop('hop_num')
+                    taking = cache_packet_info.pop('taking')
+                    str_hop_num = ''
+                    for k,v in hop_num.items():
+                        str_hop_num += str(v)
+                        str_hop_num += ','
+                    # something like '0,12,34,122,'
+                    cache_packet_info['hop_num'] = str_hop_num
+                    str_taking = ''
+                    for k,v in taking.items():
+                        str_taking += str(v)
+                        str_taking += ','
+                    cache_packet_info['taking'] = str_taking
+
+                    print('ready dump to db of chain_hash:{0}'.format(json.dumps(cache_packet_info)))
+                    self.packet_info_sql.uniq_insert_to_db(cache_packet_info)
 
                     # erase chain_hash of this packet_info from cache
                     del self.packet_info_cache_[chain_hash]
+                    tmp_remove_chain_hash_list.append(chain_hash)
+
+                for chain_hash in tmp_remove_chain_hash_list:
+                    # remove from list
                     self.packet_info_chain_hash_.remove(chain_hash)
                 
             # wait 5 min until the next dump_db
-            time.sleep(5 * 60)
+            #time.sleep(5 * 60)
+            time.sleep(5)
         return 
 
     # get chain_hash from cache and db

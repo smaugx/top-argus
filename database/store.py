@@ -1,7 +1,6 @@
 #-*- coding:utf-8 -*-
 #import MySQLdb
-#import database.config
-import config
+import database.config as config
 import pymysql.cursors
 
 
@@ -40,8 +39,8 @@ def connect_db(cfg):
             use_unicode=True,
             charset="utf8")
         return conn
-    except Exception, e:
-        print 'connect db failed:%s' % e
+    except Exception as e:
+        print('connect db failed:%s' % e)
         return None
 
 

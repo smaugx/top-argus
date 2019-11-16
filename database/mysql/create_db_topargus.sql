@@ -35,8 +35,8 @@ CREATE TABLE IF NOT EXISTS packet_info_table(
 DROP TABLE IF EXISTS packet_recv_info_table;
 CREATE TABLE IF NOT EXISTS packet_recv_info_table(
                 chain_hash INT(10) unsigned NOT NULL,
-                recv_nodes_id VARCHAR(20) DEFAULT "",
-                recv_nodes_ip VARCHAR(20) DEFAULT "",
+                recv_node_id VARCHAR(20) DEFAULT "",
+                recv_node_ip VARCHAR(20) DEFAULT "",
                 PRIMARY KEY (chain_hash)
 )
         ENGINE =InnoDB

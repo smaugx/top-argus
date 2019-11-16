@@ -17,9 +17,24 @@ class Bean(object):
         keys = data.keys()
         safe_keys = ['`%s`' % k for k in keys]
         sql = 'INSERT INTO `%s`(%s) VALUES(%s)' % (cls._tbl, ','.join(safe_keys), '%s' + ',%s' * (size - 1))
-        print sql
+        print(sql)
         last_id = cls._db.insert(sql, [data[key] for key in keys])
         return last_id
+
+    @classmethod
+    def uniq_insert(cls, data=None):
+        if not data:
+            raise ValueError('argument data is invalid')
+
+        size = len(data)
+        keys = data.keys()
+        safe_keys = ['`%s`' % k for k in keys]
+        # ignore PRIMARY KEY Duplicate
+        sql = 'INSERT IGNORE INTO `%s`(%s) VALUES(%s)' % (cls._tbl, ','.join(safe_keys), '%s' + ',%s' * (size - 1))
+        print(sql)
+        last_id = cls._db.insert(sql, [data[key] for key in keys])
+        return last_id
+
 
     @classmethod
     def delete(cls, where=None ):
@@ -33,7 +48,7 @@ class Bean(object):
     @classmethod
     def update(cls, clause=None,params = None):
         sql = 'UPDATE `%s` SET %s' % (cls._tbl, clause)
-        print sql,clause
+        print(sql,clause)
         return cls._db.update(sql ,params)
 
     @classmethod
