@@ -64,10 +64,12 @@ def index():
 @app.route('/api/config', methods=['GET', 'POST'])
 def config_update():
     global gconfig
+    '''
     if not request.is_json:
         payload = json.loads(request.data)
     else:
         payload = request.get_json()
+    '''
 
     ret = {'status':''}
     status_ret = {
