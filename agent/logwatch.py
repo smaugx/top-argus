@@ -435,6 +435,9 @@ if __name__ == "__main__":
 
     filename = './xtop.log'
     filename = gconfig.get('watch_filename')
+    if len(sys.argv) == 2:
+        filename = sys.argv[1]
+
     #run_watch(filename)
 
     watchlog_th = threading.Thread(target = run_watch, args = (filename, ))
