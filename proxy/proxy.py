@@ -60,8 +60,8 @@ def index():
     return 'Hello, World!'
 
 # config get and update
-@app.route('/api/alarm/', methods=['GET', 'POST'])
-@app.route('/api/alarm', methods=['GET', 'POST'])
+@app.route('/api/config/', methods=['GET', 'POST'])
+@app.route('/api/config', methods=['GET', 'POST'])
 def config_update():
     global gconfig
     if not request.is_json:
