@@ -79,7 +79,7 @@ def config_update():
             }
 
     alarm_ip = request.remote_addr
-    slog.info("update config ip:{0} {1}".format(alarm_ip))
+    slog.info("update config ip:{0}".format(alarm_ip))
     ret = {'status': 0, 'error': status_ret.get(0), 'config': gconfig}
     return jsonify(ret)
 
