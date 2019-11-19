@@ -1,2 +1,4 @@
 vv/*
 *.pyc
+*.log
+__pycache__/*

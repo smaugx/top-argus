@@ -1,4 +1,4 @@
-#!/mnt/old/home/smaug/top-argus/vvlinux/bin/python3
+#!/root/smaug/top-argus/vvlinux/bin/python3
 
 import argparse
 import code

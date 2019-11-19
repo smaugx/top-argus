@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS packet_info_table(
                 chain_msgid INT(10) unsigned NOT NULL,
                 chain_msg_size INT(10) unsigned DEFAULT 0,
                 packet_size INT(10) unsigned DEFAULT 0,
-                send_timestamp INT(13) unsigned DEFAULT 0,
+                send_timestamp INT(20) unsigned DEFAULT 0,
                 is_root INT(1) unsigned  DEFAULT 0,
                 broadcast INT(1) unsigned DEFAULT 1,
                 send_node_id VARCHAR(73) DEFAULT "",
@@ -35,9 +35,10 @@ CREATE TABLE IF NOT EXISTS packet_info_table(
 DROP TABLE IF EXISTS packet_recv_info_table;
 CREATE TABLE IF NOT EXISTS packet_recv_info_table(
                 chain_hash INT(10) unsigned NOT NULL,
-                recv_node_id VARCHAR(20) DEFAULT "",
+                recv_node_id VARCHAR(73) DEFAULT "",
                 recv_node_ip VARCHAR(20) DEFAULT "",
-                PRIMARY KEY (chain_hash)
+                INDEX (chain_hash)
+
 )
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;

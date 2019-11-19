@@ -4,7 +4,7 @@
 import os 
 now_dir = os.path.dirname(os.path.abspath(__file__))
 base_dir = os.path.dirname(now_dir)  #parent dir
-activate_this = '%s/vv/bin/activate_this.py' % base_dir
+activate_this = '%s/vvlinux/bin/activate_this.py' % base_dir
 exec(open(activate_this).read())
 
 import sys
@@ -21,6 +21,7 @@ import base64
 import copy
 import core
 import threading
+from common.slogging import slog
 
 app = Flask(__name__)
 alarm_entity = core.Alarm()
@@ -62,7 +63,8 @@ def alarm_report():
         return jsonify(ret)
 
     alarm_ip = request.remote_addr
-    print("recv ip:{0} {1} alarm:{2}".format(alarm_ip, len(payload), json.dumps(payload[0])))
+    #slog.info("recv ip:{0} {1} alarm:{2}".format(alarm_ip, len(payload), json.dumps(payload[0])))
+    slog.info("recv ip:{0} {1} alarm:{2}".format(alarm_ip, len(payload), json.dumps(payload)))
     alarm_entity.handle_alarm(payload, alarm_ip)
     ret = {'status': 0, 'error': status_ret.get(0)}
     return jsonify(ret)
@@ -86,7 +88,7 @@ def alarm_query(chain_hash):
         ret = {'status': -2, 'error': status_ret.get(-2)}
         return jsonify(ret)
 
-    print("query hash: {0}".format(chain_hash))
+    slog.info("query hash: {0}".format(chain_hash))
     packet_info = alarm_entity.get_chain_hash(chain_hash)
     if not packet_info:
         ret = {'status': -1, 'error': status_ret.get(-1)}
