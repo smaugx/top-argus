@@ -70,7 +70,7 @@ def get_cmp_dict(src_data,dst_data):
             if operator.eq(src_val,dst_val):
                 for key in src_data.keys():
                     if src_data[key] != dst_data[key]:
-                        print('differ: {0}'.format(src_data1[key]))
+                        slog.info('differ: {0}'.format(src_data1[key]))
                         return False
                 return True
             else:
