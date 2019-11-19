@@ -77,12 +77,6 @@ def update_config_from_remote():
         slog.info("get remote config fail")
         return False
     # TODO(smaug) do something check for config
-    same = operator.eq(config, gconfig)
-    if same:
-        slog.info('get remote config same as default')
-        return True
-
-    slog.info('get remote config same different,old: {0} new:{1}'.format(gconfig, config))
     gconfig = copy.deepcopy(config)
     slog.info('get remote config ok: {0}'.format(json.dumps(gconfig)))
     return True
