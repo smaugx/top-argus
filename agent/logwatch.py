@@ -54,6 +54,29 @@ gconfig = {
             },
         }
 
+def get_cmp_dict(src_data,dst_data):
+    if isinstance(src_data,str):
+        src_data=json.dumps(src_data)
+    if isinstance(dst_data,str):
+        dst_data=json.dumps(dst_data)
+    if len(src_data) != len(dst_data):
+        return False
+    else:
+        src_key=list(src_data.keys())
+        dst_key=list(dst_data.keys())
+        if operator.eq(src_key,dst_key):
+            src_val=list(src_data.values())
+            dst_val=list(dst_data.values())
+            if operator.eq(src_val,dst_val):
+                for key in src_data.keys():
+                    if src_data[key] != dst_data[key]:
+                        print('differ: {0}'.format(src_data1[key]))
+                        return False
+                return True
+            else:
+                return False
+        else:
+            return False
 
 def update_config_from_remote():
     global gconfig
@@ -77,11 +100,10 @@ def update_config_from_remote():
         slog.info("get remote config fail")
         return False
     # TODO(smaug) do something check for config
-    differ = set(config.items()) ^ set(gconfig.items())
-    if not differ:
+    cmp_same = get_cmp_dict(config, gconfig)
+    if cmp_same:
         slog.info('get remote config same as default')
         return True
-    slog.info('remote config vs local gconfig differ: {0}'.format(differ))
 
     gconfig = copy.deepcopy(config)
     slog.info('get remote config ok: {0}'.format(json.dumps(gconfig)))
