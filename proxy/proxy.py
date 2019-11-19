@@ -26,6 +26,29 @@ from common.slogging import slog
 app = Flask(__name__)
 alarm_entity = core.Alarm()
 
+gconfig = {
+        'watch_filename': './xtop.log',
+        'global_sample_rate': 100,  # sample_rate%
+        'alarm_pack_num': 1,   # upload alarm size one time
+        'grep_broadcast': {
+            'start': 'true',
+            'sample_rate': 100,
+            'network_focus_on': ['660000', '680000', '690000'], # src or dest
+            'network_ignore':   ['670000'],  # src or dest
+            },
+        'grep_point2point': {
+            'start': 'false',
+            'sample_rate': 100,
+            'network_focus_on': ['660000', '680000', '690000'], # src or dest
+            'network_ignore':   ['670000'],  # src or dest
+            },
+        'grep_networksize': {
+            'start': 'true',
+            'sample_rate': 100,
+            'network_focus_on': ['660000', '680000', '690000'], # src or dest
+            'network_ignore':   ['670000'],  # src or dest
+            },
+        }
 
 @app.route('/')
 def hello_world():
@@ -36,12 +59,34 @@ def hello_world():
 def index():
     return 'Hello, World!'
 
+# config get and update
+@app.route('/api/alarm/', methods=['GET', 'POST'])
+@app.route('/api/alarm', methods=['GET', 'POST'])
+def config_update():
+    global gconfig
+    if not request.is_json:
+        payload = json.loads(request.data)
+    else:
+        payload = request.get_json()
+
+    ret = {'status':''}
+    status_ret = {
+            0:'OK',
+            -1:'上报字段不合法,部分可能上传失败',
+            -2:'格式转化出错，请检查字段数或者字段格式等'
+            }
+
+    alarm_ip = request.remote_addr
+    slog.info("update config ip:{0} {1}".format(alarm_ip))
+    ret = {'status': 0, 'error': status_ret.get(0), 'config': gconfig}
+    return jsonify(ret)
 
 
 #告警上报(发包收包情况收集)
 @app.route('/api/alarm/', methods=['POST'])
 @app.route('/api/alarm', methods=['POST'])
 def alarm_report():
+    payload = []
     if not request.is_json:
         payload = json.loads(request.data)
     else:

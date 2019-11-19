@@ -75,8 +75,15 @@ class Alarm(object):
             return
     
         for item in alarm_list:
-            item['public_ip'] = alarm_ip
-            self.put_queue(item)
+            alarm_type = item.get('alarm_type')
+
+            # TODO(smaug) handle other type
+            if alarm_type != 'packet':
+                continue
+
+            packet_info = item.get('alarm_content')
+            packet_info['public_ip'] = alarm_ip
+            self.put_queue(packet_info)
         slog.info("put {0} alarm in queue, now size is {1}".format(len(alarm_list), self.alarm_queue_.qsize()))
         return
     

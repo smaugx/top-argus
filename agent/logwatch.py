@@ -25,7 +25,63 @@ from common.slogging import slog
 
 SENDQ = queue.Queue(10000)
 RECVQ = queue.Queue(10000)
-SAMP_RATE = 1  # sampling 10%
+gconfig = {
+        'watch_filename': './xtop.log',
+        'global_sample_rate': 100,  # sample_rate%
+        'alarm_pack_num': 1,   # upload alarm size one time
+        'grep_broadcast': {
+            'start': 'true',
+            'sample_rate': 100,
+            'alarm_type': 'packet',
+            'network_focus_on': ['660000', '680000', '690000'], # src or dest
+            'network_ignore':   ['670000'],  # src or dest
+            },
+        'grep_point2point': {
+            'start': 'false',
+            'sample_rate': 100,
+            'alarm_type': 'packet',
+            'network_focus_on': ['660000', '680000', '690000'], # src or dest
+            'network_ignore':   ['670000'],  # src or dest
+            },
+        'grep_networksize': {
+            'start': 'true',
+            'sample_rate': 100,
+            'alarm_type': 'networksize',
+            'network_focus_on': ['660000', '680000', '690000'], # src or dest
+            'network_ignore':   ['670000'],  # src or dest
+            },
+        }
+
+
+def update_config_from_remote():
+    global gconfig
+    url = 'http://127.0.0.1:9090/api/config/'
+    my_headers = {
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36',
+            'Content-Type': 'application/json;charset=UTF-8',
+            }
+    config = {}
+    try:
+        res = requests.get(url, headers = my_headers, timeout = 5)
+        if res.status_code == 200:
+            if res.json().get('status') == 0:
+                slog.info("get remote config ok, response: {0}".format(res.text))
+                config = res.json().get('config')
+    except Exception as e:
+        slog.info("exception: {0}".format(e))
+        return False
+
+    if not config:
+        slog.info("get remote config fail")
+        return False
+    # TODO(smaug) do something check for config
+    if cmp(config, gconfig) == 0:
+        slog.info('get remote config same as default')
+        return True
+
+    gconfig = copy.deepcopy(config)
+    slog.info('get remote config ok: {0}'.format(json.dumps(gconfig)))
+    return True
 
 def clear_queue():
     global SENDQ, RECVQ
@@ -39,42 +95,160 @@ def print_queue():
     global SENDQ, RECVQ
     slog.info("sendqueue.size = {0}, recvqueue.size = {1}".format(SENDQ.qsize(), RECVQ.qsize()))
 
-def put_sendq(packet_info):
+def put_sendq(alarm_payload):
     global SENDQ
     try:
-        SENDQ.put(packet_info, block=True, timeout =2)
-        slog.info("put send_queue:{0} size:{1}, item:{2}".format(SENDQ, SENDQ.qsize(),json.dumps(packet_info)))
+        SENDQ.put(alarm_payload, block=True, timeout =2)
+        slog.info("put send_queue:{0} size:{1}, item:{2}".format(SENDQ, SENDQ.qsize(),json.dumps(alarm_payload)))
     except Exception as e:
-        slog.info("queue full, drop packet_info")
+        slog.info("queue full, drop alarm_payload")
         return False
     return True
 
-def put_recvq(packet_info):
+def put_recvq(alarm_payload):
     global RECVQ 
     try:
-        RECVQ.put(packet_info, block=True, timeout =2)
-        slog.info("put recv_queue:{0} size:{1} item:{2}".format(RECVQ, RECVQ.qsize(),json.dumps(packet_info)))
+        RECVQ.put(alarm_payload, block=True, timeout =2)
+        slog.info("put recv_queue:{0} size:{1} item:{2}".format(RECVQ, RECVQ.qsize(),json.dumps(alarm_payload)))
     except Exception as e:
-        slog.info("queue full, drop packet_info")
+        slog.info("queue full, drop alarm_payload")
         return False
     return True
     
+# grep broadcast log
+def grep_log_broadcast(line):
+    global SENDQ, RECVQ, gconfig
+    grep_broadcast = gconfig.get('grep_broadcast')
 
-def grep_log(line):
-    global SENDQ, RECVQ
+    '''
+    # something like: 
+    'grep_broadcast': {
+        'start': 'true',
+        'sample_rate': 100,
+        'network_focus_on': ['660000', '680000', '690000'], # src or dest
+        'network_ignore':   ['670000'],  # src or dest
+        }
+    '''
     try:
+        if grep_broadcast.get('start') != 'true':
+            return False
+
         #slog.info('line: {0}'.format(line))
         send_flag = False if (line.find('alarm elect_vhost_original_send') == -1) else True
         recv_flag = False if (line.find('alarm elect_vhost_final_recv') == -1) else True
         if not send_flag and not recv_flag:
-            return SENDQ.qsize(), RECVQ.qsize()
+            return False
 
-        
+        if line.find('broadcast:1') == -1:
+            slog.info('grep_broadcast found point2point')
+            return False
+
         # do something filtering
-        if line.find('670000') != -1:
-            return SENDQ.qsize(), RECVQ.qsize()
-        if line.find('660000') == -1 and line.find('680000') == -1 and line.find('690000') == -1:
-            return SENDQ.qsize(), RECVQ.qsize()
+        network_ignore = grep_broadcast.get('network_ignore')
+        for ni in network_ignore:
+            if line.find(ni) != -1:
+                slog.info('grep_broadcast network_ignore {0}'.format(ni))
+                return False
+        network_focus_on = grep_broadcast.get('network_focus_on')
+        nf_ret = False
+        for nf in network_focus_on:
+            if line.find(nf) != -1:
+                nf_ret = True
+                break
+        if not nf_ret:
+            slog.info('grep_broadcast network_focus_on get nothing')
+            return False
+
+        global_sample_rate = gconfig.get('global_sample_rate')
+        sample_rate = grep_broadcast.get('sample_rate')
+        if global_sample_rate < sample_rate:
+            sample_rate = global_sample_rate
+        rand_num = random.randint(0, 1000000)
+        rn = rand_num % 100 + 1  # [0,100]
+        if rn > sample_rate:
+            slog.info('grep_broadcast final sample_rate:{0} rn:{1} return'.format(sample_rate, rn))
+            return False
+        slog.info('grep_broadcast final sample_rate:{0} rn:{1} go-on'.format(sample_rate, rn))
+
+        packet_info = {}
+        local_node_id_index  = line.find('local_node_id') 
+        line = line[local_node_id_index:]
+        sp_line = line.split()
+        for item in sp_line:
+            sp_item = item.split(':')
+            key = sp_item[0]
+            value = sp_item[1]
+            packet_info[key] = value
+        #slog.info(packet_info)
+        alarm_payload = {
+                'alarm_type': grep_broadcast.get('alarm_type'),
+                'alarm_content': packet_info,
+                }
+
+        if send_flag:
+            put_sendq(alarm_payload)
+        if recv_flag:
+            put_recvq(alarm_payload)
+
+    except Exception as e:
+        slog.info("grep_log exception: {0} line:{1}".format(e, line))
+        return False
+    return True
+
+# grep point2point log
+def grep_log_point2point(line):
+    global SENDQ, RECVQ, gconfig
+    grep_point2point = gconfig.get('grep_point2point')
+
+    '''
+    # something like: 
+    'grep_point2point': {
+        'start': 'false',
+        'sample_rate': 100,
+        'network_focus_on': ['660000', '680000', '690000'], # src or dest
+        'network_ignore':   ['670000'],  # src or dest
+        },
+    '''
+    try:
+        if grep_point2point.get('start') != 'true':
+            return False
+
+        #slog.info('line: {0}'.format(line))
+        send_flag = False if (line.find('alarm elect_vhost_original_send') == -1) else True
+        recv_flag = False if (line.find('alarm elect_vhost_final_recv') == -1) else True
+        if not send_flag and not recv_flag:
+            return False
+
+        if line.find('broadcast:0') == -1:
+            slog.info('grep_point2point found broadcast')
+            return False
+
+        # do something filtering
+        network_ignore = grep_point2point.get('network_ignore')
+        for ni in network_ignore:
+            if line.find(ni) != -1:
+                slog.info('grep_point2point network_ignore {0}'.format(ni))
+                return False
+        network_focus_on = grep_point2point.get('network_focus_on')
+        nf_ret = False
+        for nf in network_focus_on:
+            if line.find(nf) != -1:
+                nf_ret = True
+                break
+        if not nf_ret:
+            slog.info('grep_point2point network_focus_on get nothing')
+            return False
+
+        global_sample_rate = gconfig.get('global_sample_rate')
+        sample_rate = grep_point2point.get('sample_rate')
+        if global_sample_rate < sample_rate:
+            sample_rate = global_sample_rate
+        rand_num = random.randint(0, 1000000)
+        rn = rand_num % 100 + 1  # [0,100]
+        if rn > sample_rate:
+            slog.info('grep_point2point final sample_rate:{0} rn:{1} return'.format(sample_rate, rn))
+            return False
+        slog.info('grep_point2point final sample_rate:{0} rn:{1} go-on'.format(sample_rate, rn))
 
         packet_info = {}
         local_node_id_index  = line.find('local_node_id') 
@@ -87,19 +261,24 @@ def grep_log(line):
             packet_info[key] = value
         #slog.info(packet_info)
 
-
-        # do something filtering
-        if packet_info.get('broadcast') != '1':
-            return SENDQ.qsize(), RECVQ.qsize()
-
+        alarm_payload = {
+                'alarm_type': grep_broadcast.get('alarm_type'),
+                'alarm_content': packet_info,
+                }
         if send_flag:
-            put_sendq(packet_info)
+            put_sendq(alarm_payload)
         if recv_flag:
-            put_recvq(packet_info)
+            put_recvq(alarm_payload)
 
     except Exception as e:
-        slog.info("grep_log exception: {0}".format(e))
-        slog.info(line)
+        slog.info("grep_log exception: {0} line:{1}".format(e, line))
+        return False
+    return True
+
+
+def grep_log(line):
+    grep_log_broadcast(line)
+    grep_log_point2point(line)
 
     print_queue()
     return SENDQ.qsize(), RECVQ.qsize()
@@ -117,7 +296,6 @@ def watchlog(filename, offset = 0):
     #log_handle.seek(0, 2)   # go to end
     log_handle.seek(offset, 0)   # go to offset from head
     cur_pos = log_handle.tell()
-    slog.info("1")
     while True:
         cur_pos = log_handle.tell()
         try:
@@ -138,12 +316,11 @@ def watchlog(filename, offset = 0):
             send_size, recv_size = grep_log(line)
             wait_num = 0
 
-    slog.info("2")
     # judge new file "$filename" created
     if not os.path.exists(filename):
         return cur_pos
     try:
-        new_log_handle = open(filename, 'r',encoding="utf-8")
+        new_log_handle = open(filename, 'r',encoding="latin-1")
     except Exception as e:
         return cur_pos
 
@@ -177,16 +354,12 @@ def do_alarm(alarm_list):
         res = requests.post(url, headers = my_headers,data = my_data, timeout = 5)
         if res.status_code == 200:
             if res.json().get('status') == 0:
-                #slog.info("send alarm ok, response: {0}".format(res.text))
                 slog.info("send alarm ok, response: {0}".format(res.text))
             else:
-                #slog.info("send alarm fail, response: {0}".format(res.text))
                 slog.info("send alarm fail, response: {0}".format(res.text))
         else:
-            #slog.warn('send alarm fail: {0}'.format(res.text))
             slog.info('send alarm fail: {0}'.format(res.text))
     except Exception as e:
-        #slog.error("exception: {0}".format(e))
         slog.info("exception: {0}".format(e))
 
     return
@@ -194,18 +367,18 @@ def do_alarm(alarm_list):
 
 
 def consumer_send():
-    global SENDQ, RECVQ, SAMP_RATE
+    global SENDQ, RECVQ, gconfig
+    alarm_pack_num = gconfig.get('alarm_pack_num')
     th_name = threading.current_thread().name
     alarm_list = []
     while True:
         try:
             slog.info("consumer thread:{0} send_queue:{1} size:{2}".format(th_name, SENDQ, SENDQ.qsize()))
             while not SENDQ.empty():
-                packet_info = SENDQ.get()
-                if int(packet_info.get('chain_hash')) % SAMP_RATE == 0:
-                    alarm_list.append(packet_info)
+                alarm_payload = SENDQ.get()
+                alarm_list.append(alarm_payload)
 
-                if len(alarm_list) >= 1:
+                if len(alarm_list) >= alarm_pack_num:
                     slog.info("send do_alarm")
                     do_alarm(alarm_list)
                     alarm_list.clear()
@@ -215,18 +388,18 @@ def consumer_send():
             pass
 
 def consumer_recv():
-    global SENDQ, RECVQ, SAMP_RATE
+    global SENDQ, RECVQ, gconfig
     th_name = threading.current_thread().name
+    alarm_pack_num = gconfig.get('alarm_pack_num')
     alarm_list = []
     while True:
         try:
             slog.info("consumer thread:{0} recv_queue:{1} size:{2}".format(th_name, RECVQ, RECVQ.qsize()))
             while not RECVQ.empty():
-                packet_info = RECVQ.get()
-                if int(packet_info.get('chain_hash')) % SAMP_RATE == 0:
-                    alarm_list.append(packet_info)
+                alarm_payload = RECVQ.get()
+                alarm_list.append(alarm_payload)
 
-                if len(alarm_list) >= 1:
+                if len(alarm_list) >= alarm_pack_num:
                     slog.info("recv do_alarm")
                     do_alarm(alarm_list)
                     alarm_list.clear()
@@ -248,8 +421,8 @@ def consumer_recv_test():
                     do_alarm(alarm_list)
                     alarm_list.clear()
 
-                packet_info = RECVQ.get()
-                alarm_list.append(packet_info)
+                alarm_payload = RECVQ.get()
+                alarm_list.append(alarm_payload)
         except Exception as e:
             pass
 
@@ -257,9 +430,11 @@ def consumer_recv_test():
 
     
 if __name__ == "__main__":
+    if not update_config_from_remote():
+        slog.error('using default config to start: {0}'.format(json.dumps(gconfig)))
+
     filename = './xtop.log'
-    if len(sys.argv) == 2:
-        filename = sys.argv[1]
+    filename = gconfig.get('watch_filename')
     #run_watch(filename)
 
     watchlog_th = threading.Thread(target = run_watch, args = (filename, ))
