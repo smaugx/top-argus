@@ -17,6 +17,7 @@ import pdb
 import requests
 import json
 import threading
+import operator
 from common.slogging import slog
 
 #xnetwork-08:35:49.631-T1719:[Keyfo]-(elect_vhost.cc: HandleRumorMessage:381): original_elect_vhost_send local_node_id:010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3 chain_hash:3340835543 chain_msgid:655361 chain_msg_size:1382 send_timestamp:1573547735068 src_node_id:67000000ff7fff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716 dest_node_id:67000000ff7fff7fffffffffffffffff0000000061d1343f82769c3eff69c5448e7b1fe5 is_root:0 broadcast:0
@@ -75,7 +76,7 @@ def update_config_from_remote():
         slog.info("get remote config fail")
         return False
     # TODO(smaug) do something check for config
-    if cmp(config, gconfig) == 0:
+    if operator.eq(config, gconfig):
         slog.info('get remote config same as default')
         return True
 
