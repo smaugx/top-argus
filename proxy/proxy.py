@@ -108,7 +108,7 @@ def alarm_report():
         return jsonify(ret)
 
     first_item = payload[0]
-    if not first_item.get('local_node_id'):   #TODO(smaug)
+    if not first_item.get('alarm_content'):   #TODO(smaug)
         ret = {'status': -1, 'error': status_ret.get(-1)}
         return jsonify(ret)
 
