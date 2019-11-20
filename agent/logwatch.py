@@ -185,12 +185,6 @@ def grep_log_broadcast(line):
         sample_rate = grep_broadcast.get('sample_rate')
         if global_sample_rate < sample_rate:
             sample_rate = global_sample_rate
-        rand_num = random.randint(0, 1000000)
-        rn = rand_num % 100 + 1  # [0,100]
-        if rn > sample_rate:
-            slog.info('grep_broadcast final sample_rate:{0} rn:{1} return'.format(sample_rate, rn))
-            return False
-        slog.info('grep_broadcast final sample_rate:{0} rn:{1} go-on'.format(sample_rate, rn))
 
         packet_info = {}
         local_node_id_index  = line.find('local_node_id') 
@@ -201,6 +195,15 @@ def grep_log_broadcast(line):
             key = sp_item[0]
             value = sp_item[1]
             packet_info[key] = value
+
+        chain_hash = int(packet_info.get('chain_hash'))
+        rn = chain_hash % 100 + 1  # [1,100]
+        if rn > sample_rate:
+            slog.info('grep_broadcast final sample_rate:{0} rn:{1} return'.format(sample_rate, rn))
+            return False
+        slog.info('grep_broadcast final sample_rate:{0} rn:{1} go-on'.format(sample_rate, rn))
+
+
         #slog.info(packet_info)
         alarm_payload = {
                 'alarm_type': grep_broadcast.get('alarm_type'),
@@ -265,12 +268,6 @@ def grep_log_point2point(line):
         sample_rate = grep_point2point.get('sample_rate')
         if global_sample_rate < sample_rate:
             sample_rate = global_sample_rate
-        rand_num = random.randint(0, 1000000)
-        rn = rand_num % 100 + 1  # [0,100]
-        if rn > sample_rate:
-            slog.info('grep_point2point final sample_rate:{0} rn:{1} return'.format(sample_rate, rn))
-            return False
-        slog.info('grep_point2point final sample_rate:{0} rn:{1} go-on'.format(sample_rate, rn))
 
         packet_info = {}
         local_node_id_index  = line.find('local_node_id') 
@@ -281,6 +278,14 @@ def grep_log_point2point(line):
             key = sp_item[0]
             value = sp_item[1]
             packet_info[key] = value
+
+
+        chain_hash = int(packet_info.get('chain_hash'))
+        rn = chain_hash % 100 + 1  # [1,100]
+        if rn > sample_rate:
+            slog.info('grep_point2point final sample_rate:{0} rn:{1} return'.format(sample_rate, rn))
+            return False
+        slog.info('grep_point2point final sample_rate:{0} rn:{1} go-on'.format(sample_rate, rn))
         #slog.info(packet_info)
 
         alarm_payload = {
