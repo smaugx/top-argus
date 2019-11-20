@@ -55,8 +55,8 @@ gconfig = {
         }
 
 def dict_cmp(a, b):
-    typea = isinstance(a, (dict, list, set, tuple)) 
-    typeb = isinstance(b, (dict, list, set, tuple)) 
+    typea = isinstance(a, dict) 
+    typeb = isinstance(b, dict) 
 
     # normal type
     if typea != typeb:
