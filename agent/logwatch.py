@@ -54,6 +54,25 @@ gconfig = {
             },
         }
 
+def dict_cmp(a, b):
+    typea = isinstance(a, (dict, list, set, tuple)) 
+    typeb = isinstance(b, (dict, list, set, tuple)) 
+
+    # normal type
+    if typea != typeb:
+        return False
+    if not typea and not typeb:
+        return operator.eq(a, b)
+
+    for k in set(a) | set(b):
+        if k not in a or k not in b:
+            slog.info('dict_cmp diff k:{0}'.format(k))
+            return False
+
+        if not dict_cmp(a[k], b[k]):
+            return False
+
+    return True
 
 def update_config_from_remote():
     global gconfig
@@ -76,6 +95,11 @@ def update_config_from_remote():
     if not config:
         slog.info("get remote config fail")
         return False
+
+    if dict_cmp(config, gconfig):
+        slog.info("get remote config same as default, no need udpate")
+        return False
+
     # TODO(smaug) do something check for config
     gconfig = copy.deepcopy(config)
     slog.info('get remote config ok: {0}'.format(json.dumps(gconfig)))
