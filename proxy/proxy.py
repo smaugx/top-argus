@@ -33,18 +33,21 @@ gconfig = {
         'grep_broadcast': {
             'start': 'true',
             'sample_rate': 100,
+            'alarm_type': 'packet',
             'network_focus_on': ['660000', '680000', '690000'], # src or dest
             'network_ignore':   ['670000'],  # src or dest
             },
         'grep_point2point': {
             'start': 'false',
             'sample_rate': 100,
+            'alarm_type': 'packet',
             'network_focus_on': ['660000', '680000', '690000'], # src or dest
             'network_ignore':   ['670000'],  # src or dest
             },
         'grep_networksize': {
             'start': 'true',
             'sample_rate': 100,
+            'alarm_type': 'networksize',
             'network_focus_on': ['660000', '680000', '690000'], # src or dest
             'network_ignore':   ['670000'],  # src or dest
             },
