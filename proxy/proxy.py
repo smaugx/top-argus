@@ -99,18 +99,18 @@ def config_update():
             ret['error'] = status_ret.get(-2)
             return jsonify(ret)
         if payload.get('test') == 'true':
-            out = '[test] update config: {0}, old_config: {1}'.format(json.dumps(config), json.dumps(gconfig))
+            out = '[test] update config: {0}, old_config: {1}'.format(json.dumps(config, indent = 4), json.dumps(gconfig, indent = 4))
             print(out)
             slog.info(out)
             ret['status'] = 0
             ret['error'] = status_ret.get(0)
             return jsonify(ret)
         if payload.get('test') == 'false':
-            out = 'update config: {0}, old_config: {1}'.format(json.dumps(config), json.dumps(gconfig))
+            out = 'update config: {0}, old_config: {1}'.format(json.dumps(config, indent = 4), json.dumps(gconfig, indent = 4))
             print(out)
             slog.info(out)
             gconfig = copy.deepcopy(config)
-            slog.info('udpate config finished, config is: {0}'.format(json.dumps(gconfig)))
+            slog.info('udpate config finished, config is: {0}'.format(json.dumps(gconfig, indent = 4)))
             ret['status'] = 0
             ret['error'] = status_ret.get(0)
             return jsonify(ret)

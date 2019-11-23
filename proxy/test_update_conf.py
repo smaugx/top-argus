@@ -58,7 +58,7 @@ def update_config():
             'test': 'true',
             }
     try:
-        res = requests.put(url, headers = my_headers, data = payload, timeout = 5)
+        res = requests.put(url, headers = my_headers, data = json.dumps(payload), timeout = 5)
         if res.status_code == 200:
             if res.json().get('status') == 0:
                 print("update remote config ok, response: {0}".format(res.text))
