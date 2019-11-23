@@ -63,27 +63,61 @@ def index():
     return 'Hello, World!'
 
 # config get and update
-@app.route('/api/config/', methods=['GET', 'POST'])
-@app.route('/api/config', methods=['GET', 'POST'])
+@app.route('/api/config/', methods=['GET', 'PUT'])
+@app.route('/api/config', methods=['GET', 'PUT'])
 def config_update():
     global gconfig
-    '''
-    if not request.is_json:
-        payload = json.loads(request.data)
-    else:
-        payload = request.get_json()
-    '''
-
-    ret = {'status':''}
     status_ret = {
             0:'OK',
-            -1:'上报字段不合法,部分可能上传失败',
-            -2:'格式转化出错，请检查字段数或者字段格式等'
+            -1:'权限验证失败',
+            -2:'格式转化出错，请检查字段数或者字段格式等',
+            -3: '不支持的方法',
             }
+    ret = {}
+    if request.method == 'GET':
+        alarm_ip = request.remote_addr
+        slog.info("update config ip:{0}".format(alarm_ip))
+        ret = {'status': 0, 'error': status_ret.get(0), 'config': gconfig}
+        return jsonify(ret)
 
-    alarm_ip = request.remote_addr
-    slog.info("update config ip:{0}".format(alarm_ip))
-    ret = {'status': 0, 'error': status_ret.get(0), 'config': gconfig}
+    if request.method == 'PUT':
+        payload = {}
+        if not request.is_json:
+            payload = json.loads(request.data)
+        else:
+            payload = request.get_json()
+
+        # auth verify
+        if not payload or payload.get('auth') != 'smaugadmin':
+            ret['status'] = -1
+            ret['error'] = status_ret.get(-1)
+            return jsonify(ret)
+        
+        config = payload.get('config')
+        if not config:
+            ret['status'] = -2
+            ret['error'] = status_ret.get(-2)
+            return jsonify(ret)
+        if payload.get('test') == 'true':
+            out = '[test] update config: {0}, old_config: {1}'.format(json.dumps(config), json.dumps(gconfig))
+            print(out)
+            slog.info(out)
+            ret['status'] = 0
+            ret['error'] = status_ret.get(0)
+            return jsonify(ret)
+        if payload.get('test') == 'false':
+            out = 'update config: {0}, old_config: {1}'.format(json.dumps(config), json.dumps(gconfig))
+            print(out)
+            slog.info(out)
+            gconfig = copy.deepcopy(config)
+            slog.info('udpate config finished, config is: {0}'.format(json.dumps(gconfig)))
+            ret['status'] = 0
+            ret['error'] = status_ret.get(0)
+            return jsonify(ret)
+
+    ret['status'] = -3
+    ret['error'] = status_ret.get(-3)
+    slog.info('not supported method:{0} of /api/config'.format(request.method))
     return jsonify(ret)
 
 
