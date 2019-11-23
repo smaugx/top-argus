@@ -105,6 +105,16 @@ def update_config_from_remote():
     slog.info('get remote config ok: {0}'.format(json.dumps(gconfig)))
     return True
 
+def update_config():
+    while True:
+        time.sleep(60)
+        slog.info('update remote config alive')
+        update_config_from_remote()
+
+    return
+
+
+
 def clear_queue():
     global SENDQ, RECVQ
     while not SENDQ.empty():
@@ -466,6 +476,10 @@ if __name__ == "__main__":
         filename = sys.argv[1]
 
     #run_watch(filename)
+
+    update_config_th = threading.Thread(target = update_config, args = (,))
+    update_config_th.start()
+    slog.info('start update config from remote thread')
 
     watchlog_th = threading.Thread(target = run_watch, args = (filename, ))
     watchlog_th.start()
