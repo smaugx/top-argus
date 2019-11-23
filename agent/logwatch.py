@@ -49,10 +49,10 @@ gconfig = {
             'start': 'true',
             'sample_rate': 100,
             'alarm_type': 'networksize',
-            'network_focus_on': ['660000', '680000', '690000'], # src or dest
-            'network_ignore':   ['670000'],  # src or dest
             },
         }
+NodeIdMap = {} # keep all nodeid existing
+
 
 def dict_cmp(a, b):
     typea = isinstance(a, dict) 
@@ -230,6 +230,97 @@ def grep_log_broadcast(line):
         return False
     return True
 
+# grep network nodes size log
+def grep_log_networksize(line):
+    global SENDQ, RECVQ, gconfig, NodeIdMap
+    grep_networksize= gconfig.get('grep_networksize')
+
+    '''
+    # something like: 
+    'grep_networksize': {
+        'start': 'true',
+        'sample_rate': 100,
+        'alarm_type': 'networksize',
+        }
+    '''
+
+    '''
+    xnetwork-13:34:56.282-T26368:[Keyfo]-(): <bluert 670000..01f2ed> [67000000ff7fff7fffffffffffffffff00000000d2912dd96c4eced1f2d603506601f2ed][9079116111273787495][103][0][255][127][255][31][1] has nodes_ size(nodes size):128,set_size:128,ip:192.168.0.99,port:9000,heart_size:128,all_ips:[192.168.0.100:9000,192.168.0.101:9000,
+    '''
+    try:
+        if grep_networksize.get('start') != 'true':
+            return False
+
+        #slog.info('line: {0}'.format(line))
+        flag = (line.find('nodes_ size') != -1) and (line.find('set_size:') != -1)
+        if not flag:
+            return False
+
+        sample_rate = grep_broadcast.get('sample_rate')
+
+        node_id_index = line.find('bluert') + 24
+        node_id = line[node_id_index:node_id_index + 72]  # hex node_id size is 72
+
+        ip_index = line.find('ip:') + 3
+        ip_end_index = line.find(',port')
+        ip = line[ip_index:ip_end_index]   # 192.168.0.99
+
+        net_size_index = line.find('set_size:')
+        net_size_end_index = line.find(',ip')
+        net_size = line[net_size_index+9:net_size_end_index]
+
+        now = int(time.time())
+        tmp_remove = []
+        for (k,v) in NodeIdMap.items():
+            if k == node_id:
+                NodeIdMap[k] = now
+            if (now - v) > 30: # 30s count, node_id(k) maybe unregister
+                tmp_remove.append(k)
+
+        node_id_status = 'normal'
+        if node_id not in NodeIdMap:
+            node_id_status = 'add'
+            NodeIdSet[node_id] = now
+
+        content = {
+                'node_id': node_id,
+                'node_ip': ip,
+                'net_size': net_size,
+                'node_id_status': node_id_status,
+                }
+
+        rn = random.randint(0,10000000) % 100 + 1  # [1,100]
+        if rn > sample_rate:
+            slog.info('grep_networksize final sample_rate:{0} rn:{1} return'.format(sample_rate, rn))
+            return False
+        slog.info('grep_networksize final sample_rate:{0} rn:{1} go-on'.format(sample_rate, rn))
+
+        alarm_payload = {
+                'alarm_type': grep_networksize.get('alarm_type'),
+                'alarm_content': content,
+                }
+        slog.info('grep_networksize alarm_payload: {0}'.format(json.dumps(alarm_payload)))
+        put_sendq(alarm_payload)
+
+        # not exist node_id
+        for rm_node_id in tmp_remove:
+            content = {
+                    'node_id': rm_node_id,
+                    'node_id_status': 'remove'
+                    }
+            alarm_payload = {
+                    'alarm_type': grep_networksize.get('alarm_type'),
+                    'alarm_content': content,
+                    }
+            slog.info('grep_networksize remove node_id alarm_payload: {0}'.format(json.dumps(alarm_payload)))
+            put_sendq(alarm_payload)
+
+    except Exception as e:
+        slog.info("grep_log_networksize exception: {0} line:{1}".format(e, line))
+        return False
+    return True
+
+
 # grep point2point log
 def grep_log_point2point(line):
     global SENDQ, RECVQ, gconfig
@@ -316,8 +407,9 @@ def grep_log_point2point(line):
 def grep_log(line):
     ret1 = grep_log_broadcast(line)
     ret2 = grep_log_point2point(line)
+    ret3 = grep_log_networksize(line)
 
-    if ret1 or ret2:
+    if ret1 or ret2 or ret3:
         print_queue()
     return SENDQ.qsize(), RECVQ.qsize()
 
