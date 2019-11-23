@@ -314,10 +314,11 @@ def grep_log_point2point(line):
 
 
 def grep_log(line):
-    grep_log_broadcast(line)
-    grep_log_point2point(line)
+    ret1 = grep_log_broadcast(line)
+    ret2 = grep_log_point2point(line)
 
-    print_queue()
+    if ret1 or ret2:
+        print_queue()
     return SENDQ.qsize(), RECVQ.qsize()
 
 def watchlog(filename, offset = 0):
@@ -477,7 +478,7 @@ if __name__ == "__main__":
 
     #run_watch(filename)
 
-    update_config_th = threading.Thread(target = update_config, args = (,))
+    update_config_th = threading.Thread(target = update_config)
     update_config_th.start()
     slog.info('start update config from remote thread')
 
