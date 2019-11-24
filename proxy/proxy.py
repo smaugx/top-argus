@@ -157,33 +157,6 @@ def alarm_report():
     ret = {'status': 0, 'error': status_ret.get(0)}
     return jsonify(ret)
 
-@app.route('/api/web/hash/<chain_hash>/', methods = ['GET'])
-@app.route('/api/web/hash/<chain_hash>', methods = ['GET'])
-def alarm_query(chain_hash):
-    status_ret = {
-            0:'OK',
-            -1:'hash not exist',
-            -2: 'hash invalid',
-            }
-
-    if not chain_hash:
-        ret = {'status': -1, 'error': status_ret.get(-1)}
-        return jsonify(ret)
-
-    try:
-        chain_hash = int(chain_hash)
-    except Exception as e:
-        ret = {'status': -2, 'error': status_ret.get(-2)}
-        return jsonify(ret)
-
-    slog.info("query hash: {0}".format(chain_hash))
-    packet_info = alarm_entity.get_chain_hash(chain_hash)
-    if not packet_info:
-        ret = {'status': -1, 'error': status_ret.get(-1)}
-        return jsonify(ret)
-    ret = {'status':0,'error': status_ret.get(0), 'packet_info': packet_info}
-    return jsonify(ret)
-
 
 def run():
     global alarm_th

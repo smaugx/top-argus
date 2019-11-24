@@ -2,12 +2,14 @@
 from database.bean import Bean
 import time
 import json
+from common.slogging import slog
 
 class PacketInfoSql(Bean):
     _tbl = 'packet_info_table'  #所有发包收包信息发在一个表中
     _cols = 'id,chain_hash,chain_msgid,chain_msg_size,packet_size,send_timestamp,is_root,broadcast,send_node_id,src_node_id,dest_node_id,dest_networksize,recv_nodes_num,hop_num,taking,timestamp'
 
     def __init__(self):
+        slog.info('PacketInfoSql init')
         return
 
     #TODO 增加 timestamp 范围
@@ -20,44 +22,38 @@ class PacketInfoSql(Bean):
         if data.get('id'):
             where.append(' `id` = "{0}" '.format(data.get('id')))
 
-        if data.get('gid'):
-            where.append(' gid = "{0}" '.format(data.get('gid')))
+        if data.get('chain_hash'):
+            where.append(' chain_hash = {0} '.format(data.get('chain_hash')))
 
-        if data.get('service_name'):
-            where.append(' service_name = "{0}" '.format(data.get('service_name')))
+        if data.get('chain_msgid'):
+            where.append(' chain_msgid = {0} '.format(data.get('chain_msgid')))
 
-        if data.get('type'):
-            where.append(' `type` like "{0}"'.format(data.get('type')))
+        if data.get('is_root'):
+            where.append(' is_root = {0} '.format(data.get('is_root')))
 
-        if data.get('name') :
-            namelist = data.get('name').split(' ')
-            wn = []
-            for n in namelist:
-                if not n: 
-                    continue
-                #e.g: name = 'bepo rery'，results include in 'bepo' and 'retry'
-                wn.append(' name like "%%{0}%%" '.format(n))
-            wn = ' and '.join(wn)
-            wn = ' ( {0} )'.format(wn)
-            where.append(wn)
+        if data.get('broadcast'):
+            where.append(' broadcast = {0} '.format(data.get('broadcast')))
 
+        if data.get('send_node_id'):
+            where.append(' send_node_id = {0} '.format(data.get('send_node_id')))
 
-        if data.get('priority'): 
-            wp = []
-            for p in data.get('priority'):
-                if int(p) not in [0,1,2,3,4,5]:
-                    continue
-                #e.g priority = [1,2] ,results include in 1 or 2
-                wp.append(' priority = %d ' % int(p))
-            wp = ' or '.join(wp)
-            wp = ' ( {0} )'.format(wp)
-            where.append(wp)
+        if data.get('src_node_id'):
+            if len(data.get('src_node_id')) <= 10:
+                where.append(' src_node_id regexp "{0}" '.format(data.get('src_node_id')))
+            else:
+                where.append(' src_node_id = "{0}" '.format(data.get('src_node_id')))
+
+        if data.get('dest_node_id'):
+            if len(data.get('dest_node_id')) <= 10:
+                where.append(' dest_node_id regexp "{0}" '.format(data.get('dest_node_id')))
+            else:
+                where.append(' dest_node_id = "{0}" '.format(data.get('dest_node_id')))
 
         where = ' and '.join(where)
         vs,total = [],0
-        vs = cls.select_vs(where=where, page=page, limit=limit, order=' priority ,update_at desc ')
+        vs = cls.select_vs(where=where, page=page, limit=limit, order=' timestamp desc ')
         total = cls.total(where = where )
-        print('select * from %s where %s,total: %s' % ('main_event_cases',where,total))
+        slog.debug('select * from %s where %s,total: %s' % (_tbl,where,total))
         return vs, total
 
     @classmethod
@@ -95,47 +91,26 @@ class PacketRecvInfoSql(Bean):
     def query_from_db(cls,data,page = 1, limit = 50):
         where ,vs,total = [],[],0
 
-        if data.get('id'):
-            where.append(' `id` = "{0}" '.format(data.get('id')))
+        if data.get('chain_hash'):
+            where.append(' chain_hash = {0} '.format(data.get('chain_hash')))
 
-        if data.get('gid'):
-            where.append(' gid = "{0}" '.format(data.get('gid')))
+        if data.get('recv_node_id'):
+            if len(data.get('recv_node_id')) <= 10:
+                where.append(' recv_node_id regexp "{0}" '.format(data.get('recv_node_id')))
+            else:
+                where.append(' recv_node_id = "{0}" '.format(data.get('recv_node_id')))
 
-        if data.get('service_name'):
-            where.append(' service_name = "{0}" '.format(data.get('service_name')))
-
-        if data.get('type'):
-            where.append(' `type` like "{0}"'.format(data.get('type')))
-
-        if data.get('name') :
-            namelist = data.get('name').split(' ')
-            wn = []
-            for n in namelist:
-                if not n: 
-                    continue
-                #e.g: name = 'bepo rery'，results include in 'bepo' and 'retry'
-                wn.append(' name like "%%{0}%%" '.format(n))
-            wn = ' and '.join(wn)
-            wn = ' ( {0} )'.format(wn)
-            where.append(wn)
-
-
-        if data.get('priority'): 
-            wp = []
-            for p in data.get('priority'):
-                if int(p) not in [0,1,2,3,4,5]:
-                    continue
-                #e.g priority = [1,2] ,results include in 1 or 2
-                wp.append(' priority = %d ' % int(p))
-            wp = ' or '.join(wp)
-            wp = ' ( {0} )'.format(wp)
-            where.append(wp)
+        if data.get('recv_node_ip'):
+            if len(data.get('recv_node_ip')) <= 10:
+                where.append(' recv_node_ip regexp "{0}" '.format(data.get('recv_node_ip')))
+            else:
+                where.append(' recv_node_ip = "{0}" '.format(data.get('recv_node_ip')))
 
         where = ' and '.join(where)
         vs,total = [],0
-        vs = cls.select_vs(where=where, page=page, limit=limit, order=' priority ,update_at desc ')
+        vs = cls.select_vs(where=where, page=page, limit=limit, order=' timestamp desc ')
         total = cls.total(where = where )
-        print('select * from %s where %s,total: %s' % ('main_event_cases',where,total))
+        slog.debug('select * from %s where %s,total: %s' % (_tbl,where,total))
         return vs, total
 
     @classmethod
