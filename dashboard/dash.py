@@ -133,7 +133,7 @@ def packet_recv_query():
 # GET /api/web/network/?node_ip=127.0.0.1
 @app.route('/api/web/network/', methods = ['GET'])
 @app.route('/api/web/network', methods = ['GET'])
-def packet_recv_query():
+def network_query():
     network_id = request.args.get('network_id')       or None
     node_id    = request.args.get('node_id')          or None
     node_ip    = request.args.get('node_ip')          or None
