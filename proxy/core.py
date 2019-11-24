@@ -125,7 +125,11 @@ class Alarm(object):
                     if not packet_info.get('dest_networksize'):
                         networksize = self.get_networksize(packet_info['dest_node_id'][:17])  # head 8 * 2 bytes
                         packet_info['dest_networksize'] = networksize
-                    self.alarm_queue_.put(packet_info, block=True, timeout=2)
+                    tmp_alarm_payload = {
+                            'alarm_type': 'packet',
+                            'alarm_content': packet_info,
+                            }
+                    self.alarm_queue_.put(tmp_alarm_payload, block=True, timeout=2)
                     if self.alarm_queue_.qsize() < 500:  # avoid more cpu
                         slog.info('hold packet_info: {0}, queue size: {1}'.format(json.dumps(packet_info), self.alarm_queue_.qsize() ))
                         time.sleep(0.1)
