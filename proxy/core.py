@@ -97,9 +97,9 @@ class Alarm(object):
                     alarm_payload = self.alarm_queue_.get()
                     alarm_type = alarm_payload.get('alarm_type')
                     if alarm_type == 'packet':
-                        packet_alarm(alarm_payload.get('alarm_content'))
+                        self.packet_alarm(alarm_payload.get('alarm_content'))
                     elif alarm_type == 'networksize':
-                        networksize_alarm(alarm_payload.get('alarm_content'))
+                        self.networksize_alarm(alarm_payload.get('alarm_content'))
                     else:
                         slog.warn('invalid alarm_type:{0}'.format(alarm_type))
             except Exception as e:
@@ -123,7 +123,7 @@ class Alarm(object):
                 if not self.packet_info_cache_.get(chain_hash):
                     # this is recv info,and befor send info, put it in end of queue again
                     if not packet_info.get('dest_networksize'):
-                        networksize = self.get_networksize(packet_info['dest_node_id'][:9])  # head 8 bytes
+                        networksize = self.get_networksize(packet_info['dest_node_id'][:17])  # head 8 * 2 bytes
                         packet_info['dest_networksize'] = networksize
                     self.alarm_queue_.put(packet_info, block=True, timeout=2)
                     if self.alarm_queue_.qsize() < 500:  # avoid more cpu
@@ -188,7 +188,7 @@ class Alarm(object):
 
                 # just for debug
                 time_diff = int(time.time() * 1000) - cache_packet_info['send_timestamp']
-                networksize = self.get_networksize(cache_packet_info['dest_node_id'][:9])  # head 8 bytes
+                networksize = self.get_networksize(cache_packet_info['dest_node_id'][:17])  # head 8 * 2 bytes
                 cache_packet_info['dest_networksize'] = networksize
 
                 # insert to cache
@@ -199,6 +199,8 @@ class Alarm(object):
 
     def get_networksize(self, network_id):
         with self.network_ids_lock_:
+            if network_id.startswith('010000'):
+                network_id = '010000'
             if network_id not in self.network_ids_:
                 return 0
             return self.network_ids_[network_id]['size']
@@ -208,7 +210,11 @@ class Alarm(object):
             return False
         with self.network_ids_lock_:
             node_id = content.get('node_id')
-            network_id = node_id[:9]  # head 8 bytes
+            network_id = node_id[:17]  # head 8 * 2 bytes
+
+            # attention: specially for kroot_id 010000
+            if network_id.startswith('010000'):
+                network_id = '010000'
             node_id_status = content.get('node_id_status')
             if node_id_status == 'remove':
                 if network_id not in self.network_ids_:
@@ -224,7 +230,7 @@ class Alarm(object):
 
             if network_id not in self.network_ids_:
                 network_info = {
-                        'node_info': [{'node_id': node_id, 'node_ip': content.get('node_ip')}]
+                        'node_info': [{'node_id': node_id, 'node_ip': content.get('node_ip')}],
                         'size': 1,
                         }
                 self.network_ids_[network_id] = network_info
@@ -233,7 +239,7 @@ class Alarm(object):
             else:
                 for ni in self.network_ids_[network_id]['node_info']:
                     if ni.get('node_id') == node_id:
-                        slog.debug('already exist node_id:{0} in network_id:{1}'.format(node_id, network_id))
+                        #slog.debug('already exist node_id:{0} in network_id:{1}'.format(node_id, network_id))
                         return True
                 self.network_ids_[network_id]['node_info'].append({'node_id': node_id, 'node_ip': content.get('node_ip')})
                 self.network_ids_[network_id]['size']  += 1
