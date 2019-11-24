@@ -227,16 +227,16 @@ class Alarm(object):
     def remove_dead_node(self, node_ip):
         with self.network_ids_lock_:
             network_ids_bak = copy.deepcopy(self.network_ids_)
-            for k,v in network_ids_bak:
+            for k,v in network_ids_bak.items():
                 for i in range(len(v.get('node_info'))):
                     ni = v.get('node_info')[i]
                     if ni.get('node_ip') == node_ip:
                         del self.network_ids_[k]['node_info'][i]
-                        self.network_ids_[k]['node_info']['size'] -= 1
+                        self.network_ids_[k]['size'] -= 1
                         slog.warn('remove dead node_id:{0} node_ip:{1}'.format(ni.get('node_id'), ni.get('node_ip')))
                 if len(self.network_ids_[k]['node_info']) == 0:
                     del self.network_ids_[k]
-            for k,v in self.network_ids_:
+            for k,v in self.network_ids_.items():
                 slog.info('network_ids key:{0} size:{1}'.format(k,v.get('size')))
 
 
