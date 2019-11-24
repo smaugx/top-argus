@@ -236,6 +236,8 @@ class Alarm(object):
                         slog.warn('remove dead node_id:{0} node_ip:{1}'.format(ni.get('node_id'), ni.get('node_ip')))
                 if len(self.network_ids_[k]['node_info']) == 0:
                     del self.network_ids_[k]
+            for k,v in self.network_ids_:
+                slog.info('network_ids key:{0} size:{1}'.format(k,v.get('size')))
 
 
     def networksize_alarm(self, content):
@@ -289,10 +291,11 @@ class Alarm(object):
         if now - content.get('timestamp') > 10 * 60 * 1000:
             slog.warn('ignore alarm:{0}'.format(json.dumps(content)))
             return False
-        node_id = content.get('node_ids')
+        node_id = content.get('node_id')
         info = content.get('info')
         slog.info(info)
         node_ip = self.get_node_ip(node_id)
+        slog.info('get_node_ip {0} of node_id:{1}'.format(node_ip, node_id))
         if not node_ip:
             return False
         self.remove_dead_node(node_ip)
