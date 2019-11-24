@@ -8,7 +8,7 @@ class PacketInfoSql(Bean):
     _tbl = 'packet_info_table'  #所有发包收包信息发在一个表中
     _cols = 'id,chain_hash,chain_msgid,chain_msg_size,packet_size,send_timestamp,is_root,broadcast,send_node_id,src_node_id,dest_node_id,dest_networksize,recv_nodes_num,hop_num,taking,timestamp'
 
-    def __init__(self, data):
+    def __init__(self):
         slog.info('PacketInfoSql init')
         return
 
@@ -81,7 +81,7 @@ class PacketRecvInfoSql(Bean):
     _tbl = 'packet_recv_info_table'  #所有发包收包信息发在一个表中
     _cols = 'chain_hash,recv_node_id,recv_node_ip'
 
-    def __init__(self,data):
+    def __init__(self):
         return
 
     #TODO 增加 timestamp 范围
