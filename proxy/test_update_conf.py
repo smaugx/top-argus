@@ -43,6 +43,10 @@ gconfig = {
             'network_focus_on': ['660000', '680000', '690000'], # src or dest
             'network_ignore':   ['670000'],  # src or dest
             },
+        'grep_xtopchain': {
+            'start': 'true',
+            'alarm_type': 'progress',
+            },
         }
 
 def update_config():

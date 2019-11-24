@@ -51,6 +51,10 @@ gconfig = {
             'sample_rate': 100,
             'alarm_type': 'networksize',
             },
+        'grep_xtopchain': {
+            'start': 'true',
+            'alarm_type': 'progress',
+            }
         }
 NodeIdMap = {} # keep all nodeid existing
 
@@ -113,8 +117,6 @@ def update_config():
         update_config_from_remote()
 
     return
-
-
 
 def clear_queue():
     global SENDQ, RECVQ
@@ -266,6 +268,9 @@ def grep_log_networksize(line):
         ip_index = line.find('ip:') + 3
         ip_end_index = line.find(',port')
         ip = line[ip_index:ip_end_index]   # 192.168.0.99
+        port_index = line.find('port:') + 5
+        port_end_index = line.find(',heart_size')
+        port = line[port_index:port_end_index]  # 9000
 
         net_size_index = line.find('set_size:')
         net_size_end_index = line.find(',ip')
@@ -286,7 +291,7 @@ def grep_log_networksize(line):
 
         content = {
                 'node_id': node_id,
-                'node_ip': ip,
+                'node_ip': ip+":"+port,
                 'node_id_status': node_id_status,
                 }
 
@@ -405,8 +410,37 @@ def grep_log_point2point(line):
         return False
     return True
 
+def grep_progress(filename):
+    global  gconfig
+    if not gconfig.get('grep_xtopchain') or gconfig.get('grep_xtopchain').get('start') == 'false':
+        return False
+    cmd = 'lsof {0} |grep xtopchain'.format(filename)
+    result = os.popen(cmd).readlines()
+    if result:
+        return False
+    slog.warn('xtopchain down!! xtopchain down!! xtopchain down!!')
+
+    node_ids = []
+    for k,v in NodeIdMap:
+        node_ids.append(k)
+    if not node_ids:
+        slog.warn("no node_id exist, stop alarm xtopchain down!")
+        return False
+
+    alarm_payload = {
+            'alarm_type': gconfig.get('grep_xtopchain').get('alarm_type'),
+            'alarm_content': {
+                'node_id': node_ids[0],
+                'info': 'xtopchain down!',
+                'timestamp': int(time.time() * 1000),
+                },
+            }
+    put_sendq(alarm_payload)
+    return True
+
 
 def grep_log(line):
+    # TODO(smaug) better performance(reduce find)
     ret1 = grep_log_broadcast(line)
     ret2 = grep_log_point2point(line)
     ret3 = grep_log_networksize(line)
@@ -458,7 +492,10 @@ def watchlog(filename, offset = 0):
 
     new_log_handle.seek(0, 2)   # go to end
     new_size = new_log_handle.tell()
-    if new_size >= cur_pos:
+    if new_size > cur_pos:
+        return cur_pos
+    if new_size == cur_pos:
+        slog.info('logfile:{0} maybe stopped'.format(filename))
         return cur_pos
 
     # new file "$filename" created
