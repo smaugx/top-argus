@@ -421,10 +421,11 @@ def grep_progress(filename):
     result = os.popen(cmd).readlines()
     if result:
         return False
-    slog.warn('xtopchain down!! xtopchain down!! xtopchain down!!')
+    slog.warn('xtopchain down!! xtopchain down!! xtopchain down!! filename:{0}'.format(filename))
 
+    mark_down_flag = True
     node_ids = []
-    for k,v in NodeIdMap:
+    for k,v in NodeIdMap.items():
         node_ids.append(k)
     if not node_ids:
         slog.warn("no node_id exist, stop alarm xtopchain down!")
@@ -439,7 +440,6 @@ def grep_progress(filename):
                 },
             }
     put_sendq(alarm_payload)
-    mark_down_flag = True
     return True
 
 
