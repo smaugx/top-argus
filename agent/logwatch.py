@@ -56,7 +56,8 @@ gconfig = {
             'alarm_type': 'progress',
             }
         }
-NodeIdMap = {} # keep all nodeid existing
+NodeIdMap = {} # keep all nodeid existing: key is node_id, value is timestamp (ms)
+mark_down_flag = False
 
 
 def dict_cmp(a, b):
@@ -411,7 +412,9 @@ def grep_log_point2point(line):
     return True
 
 def grep_progress(filename):
-    global  gconfig
+    global  gconfig, mark_down_flag
+    if mark_down_flag:
+        return False
     if not gconfig.get('grep_xtopchain') or gconfig.get('grep_xtopchain').get('start') == 'false':
         return False
     cmd = 'lsof {0} |grep xtopchain'.format(filename)
@@ -436,14 +439,19 @@ def grep_progress(filename):
                 },
             }
     put_sendq(alarm_payload)
+    mark_down_flag = True
     return True
 
 
 def grep_log(line):
+    global mark_down_flag
+    mark_down_flag = False  # TODO(smaug) using a better way to handle xtopchain down flag
     # TODO(smaug) better performance(reduce find)
     ret1 = grep_log_broadcast(line)
     ret2 = grep_log_point2point(line)
     ret3 = grep_log_networksize(line)
+
+
 
     if ret1 or ret2 or ret3:
         print_queue()
@@ -496,6 +504,7 @@ def watchlog(filename, offset = 0):
         return cur_pos
     if new_size == cur_pos:
         slog.info('logfile:{0} maybe stopped'.format(filename))
+        grep_progress(filename)
         return cur_pos
 
     # new file "$filename" created
