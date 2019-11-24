@@ -287,7 +287,6 @@ def grep_log_networksize(line):
         content = {
                 'node_id': node_id,
                 'node_ip': ip,
-                'net_size': net_size,
                 'node_id_status': node_id_status,
                 }
 
