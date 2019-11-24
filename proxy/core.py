@@ -24,10 +24,12 @@ class Alarm(object):
         # keep the order of insert
         self.packet_info_chain_hash_ = []
 
-        # keep all the node_id of some network_id
+        # keep all the node_id of some network_id, key is network_id, value is nodes of this network_id
         self.network_ids_lock_ = threading.Lock()
-        # something like {'node_info': [{'node_id': xxxx, 'node_ip':127.0.0.1:9000}], 'size':1}
+        # something like {'690000010140ff7f': {'node_info': [{'node_id': xxxx, 'node_ip':127.0.0.1:9000}], 'size':1}}
         self.network_ids_ = {}
+        # just keep network_ids in memory is enough
+        self.network_ids_cache_filename_ = '/dev/shm/network_ids'
         
         # store packet_info from /api/alarm
         self.alarm_queue_ = queue.Queue(100000) 
@@ -304,8 +306,15 @@ class Alarm(object):
 
     def dump_db(self):
         while True:
-            slog.info("dump_db")
+            # network_ids just keep in cache (/dev/shm) is enough
+            with self.network_ids_lock_:
+                slog.info("dump network_id to shm")
+                with open(self.network_ids_cache_filename_, 'w') as fout:
+                    fout.write(json.dumps(self.network_ids_))
+                    fout.close()
+            # packet_info (drop,hop,time...)
             with self.packet_info_lock_:
+                slog.info("dump packet_info to db")
                 now = int(time.time() * 1000)
                 tmp_remove_chain_hash_list = []  # keep ready to remove chain_hash
                 slog.info("chain_hash size: {0}".format(len(self.packet_info_chain_hash_)))
