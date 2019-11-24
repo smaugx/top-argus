@@ -18,6 +18,7 @@ import requests
 import copy
 import json
 import threading
+import random
 import operator
 from common.slogging import slog
 
@@ -256,9 +257,10 @@ def grep_log_networksize(line):
         if not flag:
             return False
 
-        sample_rate = grep_broadcast.get('sample_rate')
+        sample_rate = grep_networksize.get('sample_rate')
 
-        node_id_index = line.find('bluert') + 24
+        #node_id_index = line.find('bluert') + 24
+        node_id_index = line.find('> [') + 3
         node_id = line[node_id_index:node_id_index + 72]  # hex node_id size is 72
 
         ip_index = line.find('ip:') + 3
@@ -280,12 +282,11 @@ def grep_log_networksize(line):
         node_id_status = 'normal'
         if node_id not in NodeIdMap:
             node_id_status = 'add'
-            NodeIdSet[node_id] = now
+            NodeIdMap[node_id] = now
 
         content = {
                 'node_id': node_id,
                 'node_ip': ip,
-                'net_size': net_size,
                 'node_id_status': node_id_status,
                 }
 

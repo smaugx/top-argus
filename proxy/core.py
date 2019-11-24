@@ -23,6 +23,11 @@ class Alarm(object):
         self.packet_info_cache_ = {}
         # keep the order of insert
         self.packet_info_chain_hash_ = []
+
+        # keep all the node_id of some network_id
+        self.network_ids_lock_ = threading.Lock()
+        # something like {'node_info': [{'node_id': xxxx, 'node_ip':127.0.0.1}], 'size':1}
+        self.network_ids_ = {}
         
         # store packet_info from /api/alarm
         self.alarm_queue_ = queue.Queue(100000) 
@@ -43,6 +48,7 @@ class Alarm(object):
                 'send_node_id': '',
                 'src_node_id': '',
                 'dest_node_id': '',
+                'dest_networksize': 0,
                 'recv_nodes_id': [],   # HexSubstr
                 'recv_nodes_ip': [],   # nodeip
                 'recv_nodes_num': 0,
@@ -75,15 +81,10 @@ class Alarm(object):
             return
     
         for item in alarm_list:
-            alarm_type = item.get('alarm_type')
+            if item.get('alarm_type') == 'packet':
+                item['alarm_content']['public_ip'] = alarm_ip
 
-            # TODO(smaug) handle other type
-            if alarm_type != 'packet':
-                continue
-
-            packet_info = item.get('alarm_content')
-            packet_info['public_ip'] = alarm_ip
-            self.put_queue(packet_info)
+            self.put_queue(item)
         slog.info("put {0} alarm in queue, now size is {1}".format(len(alarm_list), self.alarm_queue_.qsize()))
         return
     
@@ -91,89 +92,156 @@ class Alarm(object):
         while True:
             time.sleep(3)
             try:
-                slog.info("consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize()))
-                #while not self.alarm_queue_.empty():
+                slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize()))
                 while self.alarm_queue_.qsize() > 0:
-                    #add lock
-                    with self.packet_info_lock_:
-                        slog.info("begin consume, queue size: {0}".format(self.alarm_queue_.qsize()))
-                        packet_info = self.alarm_queue_.get()
-                        ptime = packet_info.get('recv_timestamp')
-                        if not ptime:
-                            ptime = packet_info.get('send_timestamp')
-                        ptime = int(ptime)
-                        now = int(time.time() * 1000)
-                        if (ptime + 5 * 60  *1000) < now:
-                            slog.info('alarm queue expired: {0}'.format(json.dumps(packet_info)))
-                            continue
-                        chain_hash = int(packet_info.get('chain_hash'))
-                        if not packet_info.get('send_timestamp'): # recv info
-                            if not self.packet_info_cache_.get(chain_hash):
-                                # this is recv info,and befor send info, put it in end of queue again
-                                #TODO(smaug)
-                                self.alarm_queue_.put(packet_info, block=True, timeout=2)
-                                if self.alarm_queue_.qsize() < 500:
-                                    slog.info('hold packet_info: {0}, queue size: {1}'.format(json.dumps(packet_info), self.alarm_queue_.qsize() ))
-                                    time.sleep(0.1)
-                                continue
-                            else: #recv info and after send info
-                                cache_packet_info = self.packet_info_cache_.get(chain_hash)
-                                cache_src_node_id = cache_packet_info.get('src_node_id')
-                                if cache_src_node_id != packet_info.get('src_node_id'):
-                                    slog.info("chain_hash confilct")
-                                    continue
-    
-                                cache_packet_info['recv_nodes_id'].append(packet_info.get('local_node_id'))
-                                cache_packet_info['recv_nodes_ip'].append(packet_info.get('public_ip'))
-                                cache_packet_info['packet_size'] = (cache_packet_info.get('packet_size') * cache_packet_info.get('recv_nodes_num') + int(packet_info.get('packet_size'))) / (cache_packet_info.get('recv_nodes_num') + 1)
-                                cache_packet_info['recv_nodes_num'] += 1
-                                hop_num  = int(packet_info.get('hop_num'))
-                                if hop_num < 5:
-                                    cache_packet_info['hop_num']['0_5'] += 1
-                                elif 5 <= hop_num and hop_num < 10:
-                                    cache_packet_info['hop_num']['5_10'] += 1
-                                elif 10 <= hop_num and hop_num < 15:
-                                    cache_packet_info['hop_num']['10_15'] += 1
-                                elif 15 <= hop_num and hop_num < 20:
-                                    cache_packet_info['hop_num']['15_20'] += 1
-                                else:
-                                    cache_packet_info['hop_num']['20_'] += 1
-                                recv_timestamp = int(packet_info.get('recv_timestamp'))
-                                send_timestamp = cache_packet_info.get('send_timestamp')
-                                taking = recv_timestamp - send_timestamp    # ms
-                                if taking < 500:
-                                    cache_packet_info['taking']['0.0_0.5'] += 1
-                                elif 500 <= taking and taking < 1000:
-                                    cache_packet_info['taking']['0.5_1.0'] += 1
-                                elif 1000 <= taking and taking < 1500:
-                                    cache_packet_info['taking']['1.0_1.5'] += 1
-                                elif 1500 <= taking and taking < 2000:
-                                    cache_packet_info['taking']['1.5_2.0'] += 1
-                                else:
-                                    cache_packet_info['taking']['2.0_'] += 1
-    
-                                # update packet_info
-                                slog.info("update packet_info: {0}".format(json.dumps(cache_packet_info)))
-                                self.packet_info_cache_[chain_hash] = cache_packet_info
-    
-                        else:  # this is send info
-                            cache_packet_info =  copy.deepcopy(self.template_packet_info_)
-                            cache_packet_info['send_node_id'] = packet_info.get('local_node_id')
-                            cache_packet_info['chain_hash'] = int(packet_info.get('chain_hash'))
-                            cache_packet_info['chain_msgid'] = int(packet_info.get('chain_msgid'))
-                            cache_packet_info['chain_msg_size'] = int(packet_info.get('chain_msg_size'))
-                            cache_packet_info['send_timestamp'] = int(packet_info.get('send_timestamp'))
-                            cache_packet_info['src_node_id'] = packet_info.get('src_node_id')
-                            cache_packet_info['dest_node_id'] = packet_info.get('dest_node_id')
-                            cache_packet_info['is_root'] = int(packet_info.get('is_root'))
-                            cache_packet_info['broadcast'] = int(packet_info.get('broadcast'))
-                            # insert to cache
-                            slog.info("insert packet_info: {0}".format(json.dumps(cache_packet_info)))
-                            self.packet_info_cache_[chain_hash] = cache_packet_info
-                            self.packet_info_chain_hash_.append(chain_hash)
+                    alarm_payload = self.alarm_queue_.get()
+                    alarm_type = alarm_payload.get('alarm_type')
+                    if alarm_type == 'packet':
+                        packet_alarm(alarm_payload.get('alarm_content'))
+                    elif alarm_type == 'networksize':
+                        networksize_alarm(alarm_payload.get('alarm_content'))
+                    else:
+                        slog.warn('invalid alarm_type:{0}'.format(alarm_type))
             except Exception as e:
                 slog.info('consumer catch exception: {0}'.format(e))
         return
+
+    # focus on packet_info(drop_rate,hop_num,timing)
+    def packet_alarm(self, packet_info):
+        #add lock
+        with self.packet_info_lock_:
+            ptime = packet_info.get('recv_timestamp')
+            if not ptime:
+                ptime = packet_info.get('send_timestamp')
+            ptime = int(ptime)
+            now = int(time.time() * 1000)
+            if (ptime + 5 * 60  *1000) < now:
+                slog.info('alarm queue expired: {0}'.format(json.dumps(packet_info)))
+                return False
+            chain_hash = int(packet_info.get('chain_hash'))
+            if not packet_info.get('send_timestamp'): # recv info
+                if not self.packet_info_cache_.get(chain_hash):
+                    # this is recv info,and befor send info, put it in end of queue again
+                    if not packet_info.get('dest_networksize'):
+                        networksize = self.get_networksize(packet_info['dest_node_id'][:9])  # head 8 bytes
+                        packet_info['dest_networksize'] = networksize
+                    self.alarm_queue_.put(packet_info, block=True, timeout=2)
+                    if self.alarm_queue_.qsize() < 500:  # avoid more cpu
+                        slog.info('hold packet_info: {0}, queue size: {1}'.format(json.dumps(packet_info), self.alarm_queue_.qsize() ))
+                        time.sleep(0.1)
+                        return False 
+                else: #recv info and after send info
+                    cache_packet_info = self.packet_info_cache_.get(chain_hash)
+                    cache_src_node_id = cache_packet_info.get('src_node_id')
+                    if cache_src_node_id != packet_info.get('src_node_id'):
+                        slog.info("chain_hash confilct")
+                        return False
+    
+                    if packet_info.get('dest_networksize'):
+                        # using earlier dest_networksize
+                        cache_packet_info['dest_networksize'] = packet_info.get('dest_networksize')
+
+                    cache_packet_info['recv_nodes_id'].append(packet_info.get('local_node_id'))
+                    cache_packet_info['recv_nodes_ip'].append(packet_info.get('public_ip'))
+                    cache_packet_info['packet_size'] = (cache_packet_info.get('packet_size') * cache_packet_info.get('recv_nodes_num') + int(packet_info.get('packet_size'))) / (cache_packet_info.get('recv_nodes_num') + 1)
+                    cache_packet_info['recv_nodes_num'] += 1
+                    hop_num  = int(packet_info.get('hop_num'))
+                    if hop_num < 5:
+                        cache_packet_info['hop_num']['0_5'] += 1
+                    elif 5 <= hop_num and hop_num < 10:
+                        cache_packet_info['hop_num']['5_10'] += 1
+                    elif 10 <= hop_num and hop_num < 15:
+                        cache_packet_info['hop_num']['10_15'] += 1
+                    elif 15 <= hop_num and hop_num < 20:
+                        cache_packet_info['hop_num']['15_20'] += 1
+                    else:
+                        cache_packet_info['hop_num']['20_'] += 1
+                    recv_timestamp = int(packet_info.get('recv_timestamp'))
+                    send_timestamp = cache_packet_info.get('send_timestamp')
+                    taking = recv_timestamp - send_timestamp    # ms
+                    if taking < 500:
+                        cache_packet_info['taking']['0.0_0.5'] += 1
+                    elif 500 <= taking and taking < 1000:
+                        cache_packet_info['taking']['0.5_1.0'] += 1
+                    elif 1000 <= taking and taking < 1500:
+                        cache_packet_info['taking']['1.0_1.5'] += 1
+                    elif 1500 <= taking and taking < 2000:
+                        cache_packet_info['taking']['1.5_2.0'] += 1
+                    else:
+                        cache_packet_info['taking']['2.0_'] += 1
+    
+                    # update packet_info
+                    slog.info("update packet_info: {0}".format(json.dumps(cache_packet_info)))
+                    self.packet_info_cache_[chain_hash] = cache_packet_info
+    
+            else:  # this is send info
+                cache_packet_info =  copy.deepcopy(self.template_packet_info_)
+                cache_packet_info['send_node_id'] = packet_info.get('local_node_id')
+                cache_packet_info['chain_hash'] = int(packet_info.get('chain_hash'))
+                cache_packet_info['chain_msgid'] = int(packet_info.get('chain_msgid'))
+                cache_packet_info['chain_msg_size'] = int(packet_info.get('chain_msg_size'))
+                cache_packet_info['send_timestamp'] = int(packet_info.get('send_timestamp'))
+                cache_packet_info['src_node_id'] = packet_info.get('src_node_id')
+                cache_packet_info['dest_node_id'] = packet_info.get('dest_node_id')
+                cache_packet_info['is_root'] = int(packet_info.get('is_root'))
+                cache_packet_info['broadcast'] = int(packet_info.get('broadcast'))
+
+                # just for debug
+                time_diff = int(time.time() * 1000) - cache_packet_info['send_timestamp']
+                networksize = self.get_networksize(cache_packet_info['dest_node_id'][:9])  # head 8 bytes
+                cache_packet_info['dest_networksize'] = networksize
+
+                # insert to cache
+                slog.info("insert packet_info:{0}, time_diff:{1}".format(json.dumps(cache_packet_info), time_diff))
+                self.packet_info_cache_[chain_hash] = cache_packet_info
+                self.packet_info_chain_hash_.append(chain_hash)
+        return True
+
+    def get_networksize(self, network_id):
+        with self.network_ids_lock_:
+            if network_id not in self.network_ids_:
+                return 0
+            return self.network_ids_[network_id]['size']
+
+    def networksize_alarm(self, content):
+        if not content:
+            return False
+        with self.network_ids_lock_:
+            node_id = content.get('node_id')
+            network_id = node_id[:9]  # head 8 bytes
+            node_id_status = content.get('node_id_status')
+            if node_id_status == 'remove':
+                if network_id not in self.network_ids_:
+                    slog.warn('remove node_id:{0} from nonexistent network_id:{1}'.format(node_id, network_id))
+                    return False
+                for ni in self.network_ids_[network_id]['node_info']:
+                    if ni.get('node_id') == node_id:
+                        self.network_ids_[network_id]['node_info'].remove(ni)
+                        break
+                self.network_ids_[network_id]['size'] -= 1
+                slog.info('remove node_id:{0} from network_id:{1}, now size:{2}'.format(node_id, network_id, self.network_ids_[network_id]['size']))
+                return True
+
+            if network_id not in self.network_ids_:
+                network_info = {
+                        'node_info': [{'node_id': node_id, 'node_ip': content.get('node_ip')}]
+                        'size': 1,
+                        }
+                self.network_ids_[network_id] = network_info
+                slog.info('add node_id:{0} to network_id:{1}, new network_id and now size is 1'.format(node_id, network_id))
+                return True
+            else:
+                for ni in self.network_ids_[network_id]['node_info']:
+                    if ni.get('node_id') == node_id:
+                        slog.debug('already exist node_id:{0} in network_id:{1}'.format(node_id, network_id))
+                        return True
+                self.network_ids_[network_id]['node_info'].append({'node_id': node_id, 'node_ip': content.get('node_ip')})
+                self.network_ids_[network_id]['size']  += 1
+                slog.info('add node_id:{0} to network_id:{1}, now size is {2}'.format(node_id, network_id, self.network_ids_[network_id]['size']))
+                return True
+
+        return True
+
 
     def dump_db(self):
         while True:
