@@ -26,7 +26,7 @@ class Alarm(object):
 
         # keep all the node_id of some network_id
         self.network_ids_lock_ = threading.Lock()
-        # something like {'node_info': [{'node_id': xxxx, 'node_ip':127.0.0.1}], 'size':1}
+        # something like {'node_info': [{'node_id': xxxx, 'node_ip':127.0.0.1:9000}], 'size':1}
         self.network_ids_ = {}
         
         # store packet_info from /api/alarm
@@ -100,6 +100,8 @@ class Alarm(object):
                         self.packet_alarm(alarm_payload.get('alarm_content'))
                     elif alarm_type == 'networksize':
                         self.networksize_alarm(alarm_payload.get('alarm_content'))
+                    elif alarm_type == 'progress':
+                        self.progress_alarm(alarm_payload.get('alarm_content'))
                     else:
                         slog.warn('invalid alarm_type:{0}'.format(alarm_type))
             except Exception as e:
@@ -209,6 +211,33 @@ class Alarm(object):
                 return 0
             return self.network_ids_[network_id]['size']
 
+    def get_node_ip(self, node_id):
+        with self.network_ids_lock_:
+            network_id = node_id[:17]  # head 8 * 2 bytes
+            if network_id.startswith('010000'):
+                network_id = '010000'
+            if network_id not in self.network_ids_:
+                return ''
+            for ni in self.network_ids_[network_id]['node_info']:
+                if ni.get('node_id') == node_id:
+                    return ni.get('node_ip')
+        slog.warn('get no node_ip of node_id:{0}'.format(node_id))
+        return ''
+
+    def remove_dead_node(self, node_ip):
+        with self.network_ids_lock_:
+            network_ids_bak = copy.deepcopy(self.network_ids_)
+            for k,v in network_ids_bak:
+                for i in range(len(v.get('node_info'))):
+                    ni = v.get('node_info')[i]
+                    if ni.get('node_ip') == node_ip:
+                        del self.network_ids_[k]['node_info'][i]
+                        self.network_ids_[k]['node_info']['size'] -= 1
+                        slog.warn('remove dead node_id:{0} node_ip:{1}'.format(ni.get('node_id'), ni.get('node_ip')))
+                if len(self.network_ids_[k]['node_info']) == 0:
+                    del self.network_ids_[k]
+
+
     def networksize_alarm(self, content):
         if not content:
             return False
@@ -251,6 +280,23 @@ class Alarm(object):
                 return True
 
         return True
+
+
+    # recv progress alarm,like down,high cpu,high mem...
+    # TODO(smaug)
+    def progress_alarm(self, content):
+        now = int(time.time() * 1000)
+        if now - content.get('timestamp') > 10 * 60 * 1000:
+            slog.warn('ignore alarm:{0}'.format(json.dumps(content)))
+            return False
+        node_id = content.get('node_ids')
+        info = content.get('info')
+        slog.info(info)
+        node_ip = self.get_node_ip(node_id)
+        if not node_ip:
+            return False
+        self.remove_dead_node(node_ip)
+        return
 
 
     def dump_db(self):
