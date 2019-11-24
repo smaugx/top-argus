@@ -315,6 +315,7 @@ def grep_log_networksize(line):
                     }
             slog.info('grep_networksize remove node_id alarm_payload: {0}'.format(json.dumps(alarm_payload)))
             put_sendq(alarm_payload)
+            NodeIdMap.pop(rm_node_id)
 
     except Exception as e:
         slog.info("grep_log_networksize exception: {0} line:{1}".format(e, line))

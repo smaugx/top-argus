@@ -223,9 +223,9 @@ class Alarm(object):
                 for ni in self.network_ids_[network_id]['node_info']:
                     if ni.get('node_id') == node_id:
                         self.network_ids_[network_id]['node_info'].remove(ni)
+                        self.network_ids_[network_id]['size'] -= 1
+                        slog.info('remove node_id:{0} from network_id:{1}, now size:{2}'.format(node_id, network_id, self.network_ids_[network_id]['size']))
                         break
-                self.network_ids_[network_id]['size'] -= 1
-                slog.info('remove node_id:{0} from network_id:{1}, now size:{2}'.format(node_id, network_id, self.network_ids_[network_id]['size']))
                 return True
 
             if network_id not in self.network_ids_:
