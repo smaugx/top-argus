@@ -4,7 +4,7 @@
 import os 
 now_dir = os.path.dirname(os.path.abspath(__file__))
 base_dir = os.path.dirname(now_dir)  #parent dir
-activate_this = '%s/vv/bin/activate_this.py' % base_dir
+activate_this = '%s/vvlinux/bin/activate_this.py' % base_dir
 exec(open(activate_this).read())
 
 import sys

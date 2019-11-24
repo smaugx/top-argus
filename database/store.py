@@ -128,7 +128,7 @@ class DB(object):
     def query_column(self, *a, **kw):
         rows = self.query_all(*a, **kw)
         if rows:
-            return [row.values()[0] for row in rows]
+            return [list(row.values())[0] for row in rows]
         else:
             return []
 

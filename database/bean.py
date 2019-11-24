@@ -97,16 +97,7 @@ class Bean(object):
     @classmethod
     def select_vs(cls, where=None, order=None, limit=None, page=None, offset=None):
         rows = cls.select(where=where, order=order, limit=limit, page=page, offset=offset)
-        #return [cls(*row) for row in rows]
-        keys = cls._cols.split(',')
-        ret = []
-        for row in rows:
-          lrow = []
-          for k in keys:
-            lrow.append(row.get(k))
-          ret.append(lrow)
-
-        return [cls(r) for r in ret]
+        return rows
 
     @classmethod
     def read(cls, where=None):
