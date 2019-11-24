@@ -36,6 +36,7 @@ def hello_world():
 def index():
     return 'Hello, World!'
 
+'''
 @app.route('/api/web/hash/<chain_hash>/', methods = ['GET'])
 @app.route('/api/web/hash/<chain_hash>', methods = ['GET'])
 def chain_hash_query(chain_hash):
@@ -63,6 +64,7 @@ def chain_hash_query(chain_hash):
         return jsonify(ret)
     ret = {'status':0,'error': status_ret.get(0), 'results': results}
     return jsonify(ret)
+'''
 
 # GET /api/web/packet/?chain_hash=8180269&chain_msgid=393217&is_root=0&broadcast=1&send_node_id=010000&src_node_id=660000&dest_node_id=680000
 @app.route('/api/web/packet/', methods = ['GET'])
@@ -125,6 +127,49 @@ def packet_recv_query():
         ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
         return jsonify(ret)
  
+# GET /api/web/network/
+# GET /api/web/network/?network_id=0100
+# GET /api/web/network/?node_id=690000010140ff7fffffffffffffffff000000009aee88245d7e31e7abaab1ac9956d5a0
+# GET /api/web/network/?node_ip=127.0.0.1
+@app.route('/api/web/network/', methods = ['GET'])
+@app.route('/api/web/network', methods = ['GET'])
+def packet_recv_query():
+    network_id = request.args.get('network_id')       or None
+    node_id    = request.args.get('node_id')          or None
+    node_ip    = request.args.get('node_ip')          or None
+
+    params_num = 0
+    if network_id:
+        params_num += 1
+    if node_id:
+        params_num += 1
+    if node_ip:
+        params_num += 1
+
+    status_ret = {
+            0:'OK',
+            -1:'没有数据',
+            -2: '参数不合法',
+            }
+    if params_num > 1:
+        ret = {'status':-2,'error': status_ret.get(-2) , 'results': []}
+        return jsonify(ret)
+
+    data = {
+            'network_id': network_id,
+            'node_id': node_id,
+            'node_ip': node_ip,
+            }
+
+    results = mydash.get_network_id(data)
+    if results:
+        ret = {'status':0,'error': status_ret.get(0) , 'results': results}
+        return jsonify(ret)
+    else:
+        ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
+        return jsonify(ret)
+ 
+
 
 
 
