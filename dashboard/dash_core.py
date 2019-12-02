@@ -17,9 +17,9 @@ class Dash(object):
         # init db obj
         self.packet_info_sql = PacketInfoSql()
         self.packet_recv_info_sql = PacketRecvInfoSql()
+        self.network_info_sql = NetworkInfoSql()
 
         self.network_ids_lock_ = threading.Lock()
-        self.network_ids_cache_filename_ = '/dev/shm/network_ids'
         self.network_ids_ = {}
 
     def get_packet_info(self, data):
@@ -36,24 +36,30 @@ class Dash(object):
             slog.debug('packet_recv_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
         return vs,total
 
+    def query_network_id(self,data):
+        vs,total = [],0
+        vs,total = self.network_info_sql.query_from_db(data)
+        if not vs:
+            slog.debug('network_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
+        return vs,total
+
     def get_network_id(self, data):
         result = []
         now = int(time.time() * 1000)
         with self.network_ids_lock_:
             # not exist or expired beyond 1 min, then reread from shm
             if not self.network_ids_ or self.network_ids_.get('update_timestamp').get('update_timestamp') < (now - 1 * 60 * 1000):
-                if not os.path.exists(self.network_ids_cache_filename_):
-                    slog.warn('network_ids_cache_filename_:{0} not exist'.format(self.network_ids_cache_filename_))
+                vs,total = self.query_network_id({})
+                if not vs:
                     return result
-                with open(self.network_ids_cache_filename_, 'r') as fin:
-                    self.network_ids_ = json.loads(fin.read())
-                    if not self.network_ids_:
-                        slog.warn('read_network_id from filename:{0} failed.'.format(self.network_ids_cache_filename_))
-                        return result
+                for item in vs:
+                    nid = item.get('network_id')
+                    ninfo = item.get('network_info')
+                    ninfo = json.loads(ninfo)
+                    self.network_ids_[nid] = ninfo
 
-                    self.network_ids_['update_timestamp'] = {'update_timestamp': int(time.time() * 1000)}
-                    slog.info('read_network_id from filename:{0} success. {1}'.format(self.network_ids_cache_filename_, json.dumps(self.network_ids_)))
-                    fin.close()
+                self.network_ids_['update_timestamp'] = {'update_timestamp': int(time.time() * 1000)}
+                slog.info('read_network_id from db success. {0}'.format(json.dumps(self.network_ids_)))
 
         if data.get('network_id'):
             # get network_id

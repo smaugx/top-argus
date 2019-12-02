@@ -57,8 +57,12 @@ class PacketInfoSql(Bean):
         return vs, total
 
     @classmethod
-    def uniq_insert_to_db(cls,data):
-        return cls.uniq_insert(data = data)
+    def ignore_insert_to_db(cls,data):
+        return cls.ignore_insert(data = data)
+
+    @classmethod
+    def update_insert_to_db(cls,data):
+        return cls.update_insert(data = data)
 
     @classmethod
     def insert_to_db(cls,data):
@@ -114,8 +118,13 @@ class PacketRecvInfoSql(Bean):
         return vs, total
 
     @classmethod
-    def uniq_insert_to_db(cls,data):
-        return cls.uniq_insert(data = data)
+    def ignore_insert_to_db(cls,data):
+        return cls.ignore_insert(data = data)
+
+    @classmethod
+    def update_insert_to_db(cls,data):
+        return cls.update_insert(data = data)
+
 
     @classmethod
     def insert_to_db(cls,data):
@@ -130,5 +139,53 @@ class PacketRecvInfoSql(Bean):
     @classmethod
     def update_case(cls,data=None, where=''):
         print('update table packet_recv_info_table: %s where:%s' % (json.dumps(data),where))
+        return cls.update_dict(data = data, where = where )
+
+
+# store network_id node_id and ip 
+class NetworkInfoSql(Bean):
+    _tbl = 'network_info_table'
+    _cols = 'network_id,network_info'
+
+    def __init__(self):
+        return
+
+    @classmethod
+    def query_from_db(cls,data,page = 1, limit = 50):
+        where ,vs,total = [],[],0
+
+        if data.get('network_id'):
+            if len(data.get('network_id')) <= 10:
+                where.append(' network_id regexp "{0}" '.format(data.get('network_id')))
+            else:
+                where.append(' network_id = "{0}" '.format(data.get('network_id')))
+
+        where = ' and '.join(where)
+        vs,total = [],0
+        vs = cls.select_vs(where=where, page=page, limit=limit, order='')
+        total = cls.total(where = where )
+        slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
+        return vs, total
+
+    @classmethod
+    def ignore_insert_to_db(cls,data):
+        return cls.ignore_insert(data = data)
+
+    @classmethod
+    def update_insert_to_db(cls,data):
+        return cls.update_insert(data = data)
+
+    @classmethod
+    def insert_to_db(cls,data):
+        return cls.insert(data = data)
+    
+    @classmethod
+    def update_incry(cls,clause):
+        print('update table %s: %s ' % (cls._tbl,clause))
+        return cls.update(clause = clause)
+
+    @classmethod
+    def update_case(cls,data=None, where=''):
+        print('update table network_info_table: %s where:%s' % (json.dumps(data),where))
         return cls.update_dict(data = data, where = where )
 

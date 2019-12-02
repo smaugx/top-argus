@@ -28,8 +28,6 @@ class Alarm(object):
         self.network_ids_lock_ = threading.Lock()
         # something like {'690000010140ff7f': {'node_info': [{'node_id': xxxx, 'node_ip':127.0.0.1:9000}], 'size':1}}
         self.network_ids_ = {}
-        # just keep network_ids in memory is enough
-        self.network_ids_cache_filename_ = '/dev/shm/network_ids'
         
         # store packet_info from /api/alarm
         self.alarm_queue_ = queue.Queue(100000) 
@@ -37,6 +35,7 @@ class Alarm(object):
         # init db obj
         self.packet_info_sql = PacketInfoSql()
         self.packet_recv_info_sql = PacketRecvInfoSql()
+        self.network_info_sql = NetworkInfoSql()
         
         #template of packet_info
         self.template_packet_info_ = {
@@ -306,12 +305,13 @@ class Alarm(object):
 
     def dump_db(self):
         while True:
-            # network_ids just keep in cache (/dev/shm) is enough
+            # network_info
             with self.network_ids_lock_:
                 slog.info("dump network_id to shm")
-                with open(self.network_ids_cache_filename_, 'w') as fout:
-                    fout.write(json.dumps(self.network_ids_))
-                    fout.close()
+                for (k,v) in self.network_ids_.items():
+                    net_data = {'network_id':k ,'network_info':json.dumps(v)}
+                    self.network_info_sql.update_insert_to_db(net_data)
+
             # packet_info (drop,hop,time...)
             with self.packet_info_lock_:
                 slog.info("dump packet_info to db")
@@ -374,7 +374,7 @@ class Alarm(object):
                     cache_packet_info['taking'] = str_taking
 
                     slog.info('ready dump to db of chain_hash:{0}'.format(json.dumps(cache_packet_info)))
-                    self.packet_info_sql.uniq_insert_to_db(cache_packet_info)
+                    self.packet_info_sql.update_insert_to_db(cache_packet_info)
 
                     # erase chain_hash of this packet_info from cache
                     del self.packet_info_cache_[chain_hash]

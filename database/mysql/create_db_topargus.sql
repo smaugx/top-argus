@@ -39,7 +39,17 @@ CREATE TABLE IF NOT EXISTS packet_recv_info_table(
                 recv_node_id VARCHAR(73) DEFAULT "",
                 recv_node_ip VARCHAR(20) DEFAULT "",
                 INDEX (chain_hash)
+)
+        ENGINE =InnoDB
+        DEFAULT CHARSET =utf8;
 
+
+/* 每一个 network_id 对应的节点以及 ip*/
+DROP TABLE IF EXISTS network_info_table;
+CREATE TABLE IF NOT EXISTS network_info_table(
+                network_id VARCHAR(20) NOT NULL,
+                network_info MEDIUMTEXT DEFAULT "",
+                PRIMARY KEY (network_id)
 )
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;
