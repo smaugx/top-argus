@@ -7,7 +7,7 @@ import time
 import queue
 import copy
 import threading
-from database.packet_sql import PacketInfoSql, PacketRecvInfoSql
+from database.packet_sql import PacketInfoSql, PacketRecvInfoSql,NetworkInfoSql
 from common.slogging import slog
 
 

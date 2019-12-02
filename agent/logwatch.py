@@ -263,7 +263,10 @@ def grep_log_networksize(line):
         sample_rate = grep_networksize.get('sample_rate')
 
         #node_id_index = line.find('bluert') + 24
-        node_id_index = line.find('> [') + 3
+        node_id_index = line.find('> [')
+        if node_id_index == -1:
+            return False
+        node_id_index = += 3
         node_id = line[node_id_index:node_id_index + 72]  # hex node_id size is 72
 
         ip_index = line.find('ip:') + 3
