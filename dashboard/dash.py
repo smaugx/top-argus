@@ -144,6 +144,7 @@ def network_query():
     else:
         onlysize = False
 
+    print(onlysize)
     status_ret = {
             0:'OK',
             -1:'没有数据',

@@ -68,11 +68,12 @@ class Dash(object):
         if data.get('network_id'):
             # get network_id
             for k,v in self.network_ids_.items():
-                if k.startswith(data.get('network_id')) or k == data.get('network_id'):
-                    if not data.get('onlyszie'):
-                        result['node_info'].extend(v.get('node_info'))
-                        node_size += len(v.get('node_info'))
+                if not v or not v.get('node_info'):
                     continue
+                if k.startswith(data.get('network_id')) or k == data.get('network_id'):
+                    if data.get('onlysize') != True:
+                        result['node_info'].extend(v.get('node_info'))
+                    node_size += len(v.get('node_info'))
 
             result['node_size'] = node_size
             slog.info('get_network_id success. {0}'.format(json.dumps(result)))
@@ -105,19 +106,23 @@ class Dash(object):
                     continue
                 for item in v.get('node_info'):
                     if item.get('node_ip').split(':')[0] == node_ip.split(':')[0]:
-                        if not data.get('onlysize'):
+                        if data.get('onlysize') != True:
                             result['node_info'].append(item)
                         node_size += 1
             result['node_size'] = node_size
             slog.info('get_network_id of node_id:{0} node_ip:{1} success. result:{2}'.format(data.get('node_id'), data.get('node_ip'), json.dumps(result)))
             return result
         else: # get all network_ids
-            result = copy.deepcopy(self.network_ids_) 
             node_size = 0
-            for k,v in self.network_ids_:
-                if not data.get('onlysize'):
-                    result['node_info'].extend(v.get('node_info'))
-                node_size += len(v.get('node_info'))
+            for k,v in self.network_ids_.items():
+                if not v or not v.get('node_info'):
+                    continue
+                vinfo = v.get('node_info')
+                if not vinfo:
+                    continue
+                if data.get('onlysize') != True:
+                    result['node_info'].extend(vinfo)
+                node_size += len(vinfo)
             result['node_size'] = node_size 
             slog.info('get_network_id success. result:{0}'.format(result))
             return result
