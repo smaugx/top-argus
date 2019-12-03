@@ -275,6 +275,8 @@ def grep_log_networksize(line):
         port_index = line.find('port:') + 5
         port_end_index = line.find(',heart_size')
         port = line[port_index:port_end_index]  # 9000
+        if int(port) <= 0:
+            return False
 
         net_size_index = line.find('set_size:')
         net_size_end_index = line.find(',ip')

@@ -104,7 +104,6 @@ class Bean(object):
                 offset = 0
             sql = '%s OFFSET %s' % (sql, offset)
 
-
         return cls._db.query_all(sql )
 
     @classmethod

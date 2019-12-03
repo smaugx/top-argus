@@ -36,36 +36,6 @@ def hello_world():
 def index():
     return 'Hello, World!'
 
-'''
-@app.route('/api/web/hash/<chain_hash>/', methods = ['GET'])
-@app.route('/api/web/hash/<chain_hash>', methods = ['GET'])
-def chain_hash_query(chain_hash):
-    status_ret = {
-            0:'OK',
-            -1:'hash not exist',
-            -2: 'hash invalid',
-            }
-
-    if not chain_hash:
-        ret = {'status': -1, 'error': status_ret.get(-1)}
-        return jsonify(ret)
-
-    try:
-        chain_hash = int(chain_hash)
-    except Exception as e:
-        ret = {'status': -2, 'error': status_ret.get(-2)}
-        return jsonify(ret)
-
-    slog.debug("query hash: {0}".format(chain_hash))
-    data = {'chain_hash': chain_hash}
-    results,total = mydash.get_packet_info(data)
-    if not results:
-        ret = {'status': -1, 'error': status_ret.get(-1)}
-        return jsonify(ret)
-    ret = {'status':0,'error': status_ret.get(0), 'results': results}
-    return jsonify(ret)
-'''
-
 # GET /api/web/packet/?chain_hash=8180269&chain_msgid=393217&is_root=0&broadcast=1&send_node_id=010000&src_node_id=660000&dest_node_id=680000
 @app.route('/api/web/packet/', methods = ['GET'])
 @app.route('/api/web/packet', methods = ['GET'])
@@ -77,12 +47,18 @@ def packet_query():
     send_node_id = request.args.get('send_node_id')     or None
     src_node_id  = request.args.get('src_node_id')      or None
     dest_node_id = request.args.get('dest_node_id')     or None
+    limit        = request.args.get('limit')            or None
+    page         = request.args.get('page')             or None
+
+    if chain_hash:
+        chain_hash = int(chain_hash)
+    if chain_msgid:
+        chain_msgid = int(chain_msgid)
 
     status_ret = {
             0:'OK',
             -1:'没有数据',
             }
-
     
     data = {
             'chain_hash': chain_hash,
@@ -93,7 +69,7 @@ def packet_query():
             'src_node_id': src_node_id,
             'dest_node_id': dest_node_id,
             }
-    results,total = mydash.get_packet_info(data)
+    results,total = mydash.get_packet_info(data, limit, page)
     if results:
         ret = {'status':0,'error': status_ret.get(0) , 'results': results}
         return jsonify(ret)
@@ -108,6 +84,11 @@ def packet_recv_query():
     chain_hash   = request.args.get('chain_hash')       or None
     recv_node_id = request.args.get('recv_node_id')     or None
     recv_node_ip = request.args.get('recv_node_ip')     or None
+    limit        = request.args.get('limit')            or None
+    page         = request.args.get('page')             or None
+
+    if chain_hash:
+        chain_hash = int(chain_hash)
 
     status_ret = {
             0:'OK',
@@ -119,7 +100,7 @@ def packet_recv_query():
             'recv_node_id': recv_node_id,
             'recv_node_ip': recv_node_ip,
             }
-    results,total = mydash.get_packet_recv_info(data)
+    results,total = mydash.get_packet_recv_info(data, limit, page)
     if results:
         ret = {'status':0,'error': status_ret.get(0) , 'results': results}
         return jsonify(ret)
@@ -159,6 +140,30 @@ def network_query():
             }
 
     results = mydash.get_network_id(data)
+    if results:
+        ret = {'status':0,'error': status_ret.get(0) , 'results': results}
+        return jsonify(ret)
+    else:
+        ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
+        return jsonify(ret)
+ 
+# GET /api/web/networkid/?virtual=true/false
+@app.route('/api/web/networkid/', methods = ['GET'])
+@app.route('/api/web/networkid', methods = ['GET'])
+def networkid_query():
+    virtual = request.args.get('virtual')         or None
+    if virtual == 'true':
+        virtual = True
+    else:
+        virtual = False
+
+    status_ret = {
+            0:'OK',
+            -1:'没有数据',
+            -2: '参数不合法',
+            }
+
+    results = mydash.get_network_id_list(virtual)
     if results:
         ret = {'status':0,'error': status_ret.get(0) , 'results': results}
         return jsonify(ret)

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>ECharts Ajax</title>
+    <script type="text/javascript" src="http://libs.baidu.com/jquery/1.11.1/jquery.min.js"></script>
+</head>
+
+<body>
+    <!--Step:1 为ECharts准备一个具备大小（宽高）的Dom-->
+    <div id="main" style="height:500px;border:1px solid #ccc;padding:10px;"></div>
+    
+    <!--Step:2 引入echarts.js-->
+    <!--<script src="js/echarts.js"></script>-->
+    <script src="{{ url_for('static', filename='echarts-4.5.0/echarts.common.js') }}"></script>
+    
+    <script type="text/javascript">
+    // Step:3 为模块加载器配置echarts的路径，从当前页面链接到echarts.js，定义所需图表路径
+    require.config({
+        paths: {
+            echarts: './static',
+        }
+    });
+    
+    // Step:4 动态加载echarts然后在回调函数中开始使用，注意保持按需加载结构定义图表路径
+    require(
+        [
+            'echarts-4.5.0/src/',
+            'echarts-4.5.0/src/charts/pie',
+        ],
+        function (ec) {
+            //--- 折柱 ---
+            var myChart = ec.init(document.getElementById('main'));
+            
+            // 设置---------------------
+            option = {
+                title : {
+                    text: '某站点源',
+                    subtext: '纯属虚构',
+                    x:'center'
+                },
+                tooltip : {
+                    trigger: 'item',
+                    formatter: "{a} <br/>{b} : {c} ({d}%)"
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    data: ['直接访问','邮件营销','联盟广告','视频广告','搜索引擎']
+                },
+                series : [
+                    {
+                        name: '访问来源',
+                        type: 'pie',
+                        radius : '55%',
+                        center: ['50%', '60%'],
+                        data:[
+                            {value:3335, name:'直接访问'},
+                            {value:3110, name:'邮件营销'},
+                            {value:234, name:'联盟广告'},
+                            {value:135, name:'视频广告'},
+                            {value:1548, name:'搜索引擎'}
+                        ],
+                        itemStyle: {
+                            emphasis: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        }
+                    }
+                ]
+            };
+            
+            $.ajax({
+                cache: false,
+                type: "GET",
+                url: "/api/web/network?network_id=010000",
+                data: null,
+                dataType : "json",
+                async: false,
+                error: function(request) {
+                    alert("发送请求失败！");
+                },
+                success: function(result) {
+                    //console.log(result);
+                    for (i = 0, max = result.month.length; i < max; i++) { //注意：result.month.length
+                        option.xAxis[0].data.push(result.month[i]);
+                        option.series[0].data.push(parseFloat(result.evaporation[i])); 
+                        option.series[1].data.push(parseFloat(result.precipitation[i])); 
+                    };
+                    
+                    // 为echarts对象加载数据-------------- 
+                    myChart.setOption(option);
+                }
+            });
+            // 为echarts对象加载数据-------------- 
+            //myChart.setOption(option);
+        }
+    );
+    </script>    
+</body>
+</html>
