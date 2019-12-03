@@ -10,7 +10,7 @@ import os
 import threading
 from database.packet_sql import PacketInfoSql, PacketRecvInfoSql, NetworkInfoSql
 from common.slogging import slog
-import common.sipinfo
+import common.sipinfo as sipinfo
 
 
 class Dash(object):
@@ -70,23 +70,23 @@ class Dash(object):
                 'node_info': [],
                 'node_size': 0
                 }
-        try:
-            for item in result:
-                ip = item.get('node_ip').split(':')[0]
-                if ip in self.iplocation_:
-                    item['node_country'] = self.iplocation_[ip]['country_name']
+        #try:
+        for item in result.get('node_info'):
+            ip = item.get('node_ip').split(':')[0]
+            if ip in self.iplocation_:
+                item['node_country'] = self.iplocation_[ip]['country_name']
+            else:
+                ipinfo = sipinfo.GetIPLocation([ip])
+                if ipinfo.get(ip):
+                    self.iplocation_[ip] = ipinfo.get(ip)
+                    item['node_country'] = ipinfo.get(ip).get('country_name')
                 else:
-                    ipinfo = sipinfo.GetIPLocation([ip])
-                    if ipinfo.get(ip):
-                        self.iplocation_[ip] = ipinfo.get(ip)
-                        item['node_country'] = ipinfo.get(ip).get('country_name')
-                    else:
-                        item['node_country'] = '' 
+                    item['node_country'] = '' 
 
-                result_exp['node_info'].append(item)
-            result_exp['node_size'] = len(result_exp['node_info'])
-        except Exception as e:
-            slog.warn('parse ip goes wrong: {0}'.format(e))
+            result_exp['node_info'].append(item)
+        result_exp['node_size'] = len(result_exp['node_info'])
+        #except Exception as e:
+        #    slog.warn('parse ip goes wrong: {0}'.format(e))
         return result_exp
 
 

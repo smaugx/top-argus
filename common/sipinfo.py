@@ -21,6 +21,6 @@ def GetIPLocation(ip_address = []):
 
 
 if __name__ == '__main__':
-    ip_address = ['119.167.153.50', '118.193.107.80','197.199.254.2', '197.199.254.3','197.199.254.4']
+    ip_address = ['119.167.153.50', '118.193.107.80','197.199.254.2', '197.199.254.3','197.199.254.4', '127.0.0.1']
     result = GetIPLocation(ip_address) 
     print(json.dumps(result, indent = 4))
