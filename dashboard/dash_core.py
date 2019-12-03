@@ -43,7 +43,7 @@ class Dash(object):
             slog.debug('network_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
         return vs,total
 
-    def update_network_id(self):
+    def update_network_ids(self):
         vs,total = self.query_network_id({})
         if not vs:
             return False
@@ -159,6 +159,6 @@ class Dash(object):
                         'network_size': v.get('size')
                         }
                 result['network_info'].append(ninfo)
-            reuslt['network_size'] = len(result['network_info'])
+            result['network_size'] = len(result['network_info'])
             return result
  

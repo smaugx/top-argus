@@ -15,28 +15,26 @@
     <script src="{{ url_for('static', filename='echarts-4.5.0/echarts.common.js') }}"></script>
     
     <script type="text/javascript">
-    // Step:3 为模块加载器配置echarts的路径，从当前页面链接到echarts.js，定义所需图表路径
-    require.config({
-        paths: {
-            echarts: './static',
-        }
-    });
+        // Step:3 为模块加载器配置echarts的路径，从当前页面链接到echarts.js，定义所需图表路径
+        require.config({
+            paths: {
+                echarts: './static',
+            }
+        });
+
+        var myChart = echarts.init(document.getElementById('main'));
     
-    // Step:4 动态加载echarts然后在回调函数中开始使用，注意保持按需加载结构定义图表路径
-    require(
-        [
-            'echarts-4.5.0/src/',
-            'echarts-4.5.0/src/charts/pie',
-        ],
-        function (ec) {
-            //--- 折柱 ---
-            var myChart = ec.init(document.getElementById('main'));
-            
+        fuction get_pie(real_text, real_subtext, real_data) {
+            var keys = new Array();
+            for (var i = 0; i < real_data.length; i++) {
+                item = real_data[i]
+                keys.push(item['name'])
+            }
             // 设置---------------------
             option = {
                 title : {
-                    text: '某站点源',
-                    subtext: '纯属虚构',
+                    text: real_text,
+                    subtext: real_subtext,
                     x:'center'
                 },
                 tooltip : {
@@ -46,14 +44,15 @@
                 legend: {
                     orient: 'vertical',
                     left: 'left',
-                    data: ['直接访问','邮件营销','联盟广告','视频广告','搜索引擎']
+                    data: keys
                 },
                 series : [
                     {
-                        name: '访问来源',
+                        name: real_subtext,
                         type: 'pie',
                         radius : '55%',
                         center: ['50%', '60%'],
+                        /*
                         data:[
                             {value:3335, name:'直接访问'},
                             {value:3110, name:'邮件营销'},
@@ -61,6 +60,8 @@
                             {value:135, name:'视频广告'},
                             {value:1548, name:'搜索引擎'}
                         ],
+                        */
+                        data: real_data,
                         itemStyle: {
                             emphasis: {
                                 shadowBlur: 10,
@@ -71,33 +72,45 @@
                     }
                 ]
             };
-            
+            return option;
+
+        }
+
+        function update_virtual_network(myChart) {
             $.ajax({
                 cache: false,
                 type: "GET",
-                url: "/api/web/network?network_id=010000",
+                url: "/api/web/networkid?virtual=true",
                 data: null,
                 dataType : "json",
                 async: false,
                 error: function(request) {
                     alert("发送请求失败！");
                 },
-                success: function(result) {
+                success: function(response) {
                     //console.log(result);
-                    for (i = 0, max = result.month.length; i < max; i++) { //注意：result.month.length
-                        option.xAxis[0].data.push(result.month[i]);
-                        option.series[0].data.push(parseFloat(result.evaporation[i])); 
-                        option.series[1].data.push(parseFloat(result.precipitation[i])); 
-                    };
-                    
+                    results = response['results']
+                    network_info = results['network_info']
+                    network_size = rsults['network_size']
+
+                    var real_data = new Array();
+                    for (var i =0; i < network_info.length; ++i) {
+                        item = {
+                            'value': network_info[i]['network_size'],
+                            'name': network_info[i]['network_id']
+                        };
+                        real_data.push(item);
+                    }
+
+                    var vn_pie = get_pie('主网虚拟节点分布', '逻辑分身', real_data);
                     // 为echarts对象加载数据-------------- 
-                    myChart.setOption(option);
+                    myChart.setOption(vn_pie);
                 }
             });
-            // 为echarts对象加载数据-------------- 
-            //myChart.setOption(option);
-        }
-    );
+        } // end function update_virtual...
+
+        update_virtual_network(myChart) ;
+
     </script>    
 </body>
 </html>
