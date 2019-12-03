@@ -44,8 +44,12 @@ class Dash(object):
         return vs,total
 
     def get_network_id(self, data):
-        result = []
+        result =  {
+                'node_info': [],
+                'node_size': 0,
+                }
         now = int(time.time() * 1000)
+        node_size = 0
         with self.network_ids_lock_:
             # not exist or expired beyond 1 min, then reread from shm
             if not self.network_ids_ or self.network_ids_.get('update_timestamp').get('update_timestamp') < (now - 1 * 60 * 1000):
@@ -65,17 +69,25 @@ class Dash(object):
             # get network_id
             for k,v in self.network_ids_.items():
                 if k.startswith(data.get('network_id')) or k == data.get('network_id'):
-                    result.append(v)
+                    if not data.get('onlyszie'):
+                        result['node_info'].extend(v.get('node_info'))
+                        node_size += len(v.get('node_info'))
+                    continue
+
+            result['node_size'] = node_size
             slog.info('get_network_id success. {0}'.format(json.dumps(result)))
             return result
         elif data.get('node_id') or data.get('node_ip'):
-            node_ip = ''
-            if not data.get('node_id')  and data.get('node_ip'):
-                node_ip = data.get('node_ip')
-            if data.get('node_id')  and not data.get('node_ip'):
+            node_ip = data.get('node_ip')
+            if not node_ip:
                 # get info of node_id
                 node_id = data.get('node_id')
+                if not node_id:
+                    return result
+
                 for k,v in self.network_ids_.items():
+                    if node_ip:
+                        break
                     if not v or not v.get('node_info'):
                         continue
                     for item in v.get('node_info'):
@@ -87,24 +99,25 @@ class Dash(object):
                 slog.warn('get_node_ip failed of node_id:{0} node_ip:{1}'.format(data.get('node_id'), data.get('node_ip')))
                 return result
 
+            node_size = 0
             for k,v in self.network_ids_.items():
                 if not v or not v.get('node_info'):
                     continue
                 for item in v.get('node_info'):
                     if item.get('node_ip').split(':')[0] == node_ip.split(':')[0]:
-                        result.append({'node_id': item.get('node_id'), 'size': v.get('size')})
+                        if not data.get('onlysize'):
+                            result['node_info'].append(item)
+                        node_size += 1
+            result['node_size'] = node_size
             slog.info('get_network_id of node_id:{0} node_ip:{1} success. result:{2}'.format(data.get('node_id'), data.get('node_ip'), json.dumps(result)))
             return result
         else: # get all network_ids
             result = copy.deepcopy(self.network_ids_) 
+            node_size = 0
+            for k,v in self.network_ids_:
+                if not data.get('onlysize'):
+                    result['node_info'].extend(v.get('node_info'))
+                node_size += len(v.get('node_info'))
+            result['node_size'] = node_size 
             slog.info('get_network_id success. result:{0}'.format(result))
             return result
-
-
-
-
-
-
-
-        
-

@@ -127,38 +127,34 @@ def packet_recv_query():
         ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
         return jsonify(ret)
  
-# GET /api/web/network/
-# GET /api/web/network/?network_id=0100
-# GET /api/web/network/?node_id=690000010140ff7fffffffffffffffff000000009aee88245d7e31e7abaab1ac9956d5a0
-# GET /api/web/network/?node_ip=127.0.0.1
+# GET /api/web/network/?onlysize=true/false
+# GET /api/web/network/?network_id=0100&onlysize=true/false
+# GET /api/web/network/?node_id=690000010140ff7fffffffffffffffff000000009aee88245d7e31e7abaab1ac9956d5a0&onlysize=true/false
+# GET /api/web/network/?node_ip=127.0.0.1&onlysize=true/false
 @app.route('/api/web/network/', methods = ['GET'])
 @app.route('/api/web/network', methods = ['GET'])
 def network_query():
     network_id = request.args.get('network_id')       or None
     node_id    = request.args.get('node_id')          or None
     node_ip    = request.args.get('node_ip')          or None
+    onlysize   = request.args.get('onlysize')         or None
 
-    params_num = 0
-    if network_id:
-        params_num += 1
-    if node_id:
-        params_num += 1
-    if node_ip:
-        params_num += 1
+    if onlysize == 'true':
+        onlysize = True
+    else:
+        onlysize = False
 
     status_ret = {
             0:'OK',
             -1:'没有数据',
             -2: '参数不合法',
             }
-    if params_num > 1:
-        ret = {'status':-2,'error': status_ret.get(-2) , 'results': []}
-        return jsonify(ret)
 
     data = {
             'network_id': network_id,
             'node_id': node_id,
             'node_ip': node_ip,
+            'onlysize': onlysize,
             }
 
     results = mydash.get_network_id(data)
