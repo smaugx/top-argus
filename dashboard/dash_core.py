@@ -10,6 +10,7 @@ import os
 import threading
 from database.packet_sql import PacketInfoSql, PacketRecvInfoSql, NetworkInfoSql
 from common.slogging import slog
+import common.sipinfo
 
 
 class Dash(object):
@@ -21,6 +22,9 @@ class Dash(object):
 
         self.network_ids_lock_ = threading.Lock()
         self.network_ids_ = {}
+
+        self.iplocation_ = {}
+        return
 
     def get_packet_info(self, data, limit = 50, page = 1):
         vs,total = [],0
@@ -36,7 +40,7 @@ class Dash(object):
             slog.debug('packet_recv_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
         return vs,total
 
-    def query_network_id(self,data):
+    def query_network_ids(self,data):
         vs,total = [],0
         vs,total = self.network_info_sql.query_from_db(data)
         if not vs:
@@ -44,7 +48,7 @@ class Dash(object):
         return vs,total
 
     def update_network_ids(self):
-        vs,total = self.query_network_id({})
+        vs,total = self.query_network_ids({})
         if not vs:
             return False
         for item in vs:
@@ -57,7 +61,36 @@ class Dash(object):
         slog.info('read_network_id from db success. {0}'.format(json.dumps(self.network_ids_)))
         return True
 
-    def get_network_id(self, data):
+    def get_network_ids_exp(self, data):
+        result = self.get_network_ids(data)
+        if data.get('withip') == False:
+            return result
+
+        result_exp = {
+                'node_info': [],
+                'node_size': 0
+                }
+        try:
+            for item in result:
+                ip = item.get('node_ip').split(':')[0]
+                if ip in self.iplocation_:
+                    item['node_country'] = self.iplocation_[ip]['country_name']
+                else:
+                    ipinfo = sipinfo.GetIPLocation([ip])
+                    if ipinfo.get(ip):
+                        self.iplocation_[ip] = ipinfo.get(ip)
+                        item['node_country'] = ipinfo.get(ip).get('country_name')
+                    else:
+                        item['node_country'] = '' 
+
+                result_exp['node_info'].append(item)
+            result_exp['node_size'] = len(result_exp['node_info'])
+        except Exception as e:
+            slog.warn('parse ip goes wrong: {0}'.format(e))
+        return result_exp
+
+
+    def get_network_ids(self, data):
         result =  {
                 'node_info': [],
                 'node_size': 0,
@@ -80,7 +113,7 @@ class Dash(object):
                         node_size += len(v.get('node_info'))
 
                 result['node_size'] = node_size
-                slog.info('get_network_id success. {0}'.format(json.dumps(result)))
+                slog.info('get_network_ids success. {0}'.format(json.dumps(result)))
                 return result
             elif data.get('node_id') or data.get('node_ip'):
                 node_ip = data.get('node_ip')
@@ -114,7 +147,7 @@ class Dash(object):
                                 result['node_info'].append(item)
                             node_size += 1
                 result['node_size'] = node_size
-                slog.info('get_network_id of node_id:{0} node_ip:{1} success. result:{2}'.format(data.get('node_id'), data.get('node_ip'), json.dumps(result)))
+                slog.info('get_network_ids of node_id:{0} node_ip:{1} success. result:{2}'.format(data.get('node_id'), data.get('node_ip'), json.dumps(result)))
                 return result
             else: # get all network_ids
                 node_size = 0
@@ -128,11 +161,11 @@ class Dash(object):
                         result['node_info'].extend(vinfo)
                     node_size += len(vinfo)
                 result['node_size'] = node_size 
-                slog.info('get_network_id success. result:{0}'.format(result))
+                slog.info('get_network_ids success. result:{0}'.format(result))
                 return result
 
 
-    def get_network_id_list(self, virtual = False):
+    def get_network_ids_list(self, virtual = False):
         result =  {
                 'network_info': [],
                 'network_size': 0,

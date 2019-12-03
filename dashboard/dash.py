@@ -109,8 +109,8 @@ def packet_recv_query():
         ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
         return jsonify(ret)
  
-# GET /api/web/network/?onlysize=true/false
-# GET /api/web/network/?network_id=0100&onlysize=true/false
+# GET /api/web/network/?onlysize=[true/false]&withip=[true/false]
+# GET /api/web/network/?network_id=0100&onlysize=true/false&withip=[true/false]
 # GET /api/web/network/?node_id=690000010140ff7fffffffffffffffff000000009aee88245d7e31e7abaab1ac9956d5a0&onlysize=true/false
 # GET /api/web/network/?node_ip=127.0.0.1&onlysize=true/false
 @app.route('/api/web/network/', methods = ['GET'])
@@ -120,11 +120,17 @@ def network_query():
     node_id    = request.args.get('node_id')          or None
     node_ip    = request.args.get('node_ip')          or None
     onlysize   = request.args.get('onlysize')         or None
+    withip     = request.args.get('withip')           or None
 
     if onlysize == 'true':
         onlysize = True
     else:
         onlysize = False
+
+    if withip == 'true':
+        withip = True
+    else:
+        withip = False
 
     print(onlysize)
     status_ret = {
@@ -138,9 +144,10 @@ def network_query():
             'node_id': node_id,
             'node_ip': node_ip,
             'onlysize': onlysize,
+            'withip': withip
             }
 
-    results = mydash.get_network_id(data)
+    results = mydash.get_network_ids_exp(data)
     if results:
         ret = {'status':0,'error': status_ret.get(0) , 'results': results}
         return jsonify(ret)
@@ -153,10 +160,10 @@ def network_query():
 @app.route('/api/web/networkid', methods = ['GET'])
 def networkid_query():
     virtual = request.args.get('virtual')         or None
-    if virtual == 'true':
-        virtual = True
+    if virtual == 'false':
+        virtual = False 
     else:
-        virtual = False
+        virtual = True
 
     status_ret = {
             0:'OK',
@@ -164,7 +171,7 @@ def networkid_query():
             -2: '参数不合法',
             }
 
-    results = mydash.get_network_id_list(virtual)
+    results = mydash.get_network_ids_list(virtual)
     if results:
         ret = {'status':0,'error': status_ret.get(0) , 'results': results}
         return jsonify(ret)
