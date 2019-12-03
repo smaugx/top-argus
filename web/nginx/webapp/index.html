@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>第一个 ECharts 实例</title>
+    <!-- 引入 echarts.js -->
+    <script src="https://cdn.staticfile.org/echarts/4.3.0/echarts.min.js"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+</head>
+<body>
+    <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+    <div id="main" style="width: 900px;height:600px;"></div>
+    <script type="text/javascript">
+
+        var myChart = echarts.init(document.getElementById('main'));
+    
+        function get_pie(real_text, real_subtext, real_data){
+            var keys = new Array();
+            for (var i = 0; i < real_data.length; i++) {
+                item = real_data[i]
+                keys.push(item['name'])
+            }
+            // 设置---------------------
+            option = {
+                title : {
+                    text: real_text,
+                    subtext: real_subtext,
+                    x:'center'
+                },
+                tooltip : {
+                    trigger: 'item',
+                    formatter: "{a} <br/>{b} : {c} ({d}%)"
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    data: keys
+                },
+                series : [
+                    {
+                        name: real_subtext,
+                        type: 'pie',
+                        radius : '55%',
+                        center: ['50%', '60%'],
+                        /*
+                        data:[
+                            {value:3335, name:'直接访问'},
+                            {value:3110, name:'邮件营销'},
+                            {value:234, name:'联盟广告'},
+                            {value:135, name:'视频广告'},
+                            {value:1548, name:'搜索引擎'}
+                        ],
+                        */
+
+                        data: real_data,
+                        itemStyle: {
+                            emphasis: {
+                                shadowBlur: 20,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        }
+                    }
+                ]
+            };
+            return option;
+
+        }
+
+        function update_virtual_network(myChart){
+            $.ajax({
+                cache: false,
+                type: "GET",
+                url: "/api/web/networkid?virtual=true",
+                data: null,
+                dataType : "json",
+                async: false,
+                error: function(request) {
+                    alert("发送请求失败！");
+                },
+                success: function(response) {
+                    console.log(response);
+                    results = response['results']
+                    network_info = results['network_info']
+                    network_size = results['network_size']
+
+                    var real_data = new Array();
+                    var total_virtual_node = 0;
+                    var name_filter = {
+                        'Rec': 1,
+                        'Zec': 1,
+                        'Edg': 1,
+                        'Arc': 1,
+                        'Aud': 1,
+                        'Val': 1,
+                        'Other': 1
+                    };
+                    for (var i =0; i < network_info.length; ++i) {
+                        var value = network_info[i]['network_size'];
+                        var name  = network_info[i]['network_id'];
+                        if (name.startsWith('640000')) {
+                            //name = 'Rec(' + name + ")";
+                            name = 'Rec' + name_filter['Rec'] + "  (" + value + ")";
+                            name_filter['Rec'] += 1;
+                        } else if (name.startsWith('650000')) {
+                            //name = 'Zec(' + name + ")";
+                            name = 'Zec' + name_filter['Zec'] + "  (" + value + ")";
+                            name_filter['Zec'] += 1;
+                        } else if (name.startsWith('660000')) {
+                            //name = 'Edge(' + name + ")";
+                            name = 'Edg' + name_filter['Edg'] + "  (" + value + ")";
+                            name_filter['Edg'] += 1;
+                        } else if (name.startsWith('670000')) {
+                            //name = 'Archive(' + name + ")";
+                            name = 'Arc' + name_filter['Arc'] + "  (" + value + ")";
+                            name_filter['Arc'] += 1;
+                        } else if (name.startsWith('680000')) {
+                            //name = 'Auditor(' + name + ")";
+                            name = 'Aud' + name_filter['Aud'] + "  (" + value + ")";
+                            name_filter['Aud'] += 1;
+                        } else if (name.startsWith('690000')) {
+                            //name = 'Validator(' + name + ")";
+                            name = 'Val' + name_filter['Val'] + "  (" + value + ")";
+                            name_filter['Val'] += 1;
+                        } else {
+                            name = 'Other' + name_filter['Other'] + "  (" + value + ")";
+                            name_filter['Other'] += 1;
+                        }
+
+                        total_virtual_node += value;
+                        item = {
+                            'value': value,
+                            'name': name
+                        };
+                        real_data.push(item);
+                    }
+
+                    var vn_pie = get_pie('主网虚拟节点分布(总数:' + total_virtual_node + ")", 'betatest', real_data);
+                    // 为echarts对象加载数据-------------- 
+                    myChart.setOption(vn_pie);
+                }
+            });
+        } // end function update_virtual...
+
+        update_virtual_network(myChart) ;
+
+    </script>    
+</body>
+</html>
