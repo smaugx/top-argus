@@ -15,8 +15,9 @@
         <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
         <div id="container1" style="min-width:400px;height:400px"></div>
         <div id="container2" style="min-width:400px;height:400px"></div>
-        <div id="container3" style="min-width:400px;height:400px"></div>
+        <div id="container3" style="min-width:1400px;height:400px"></div>
         <script type="text/javascript">
+/*
             // 创建渐变色
             Highcharts.getOptions().colors = Highcharts.map(Highcharts.getOptions().colors, function (color) {
             	return {
@@ -27,6 +28,7 @@
             		]
             	};
             });
+*/
 
             function get_pie(real_text, real_subtext, real_data) {
                 var chart = {
@@ -72,7 +74,6 @@
                         alert("发送请求失败！");
                     },
                     success: function(response) {
-                        console.log(response);
                         results = response['results']
                         network_info = results['network_info']
                         network_size = results['network_size']
@@ -149,7 +150,6 @@
                         alert("发送请求失败！");
                     },
                     success: function(response) {
-                        console.log(response);
                         results = response['results']
                         node_info = results['node_info']
                         node_size = results['node_size']
@@ -170,7 +170,7 @@
 
                         for (var cname in country_map) {
                             var value = country_map[cname];
-                            var name = cname + "  (" + value + ")";
+                            var name = cname;
                             item = [name, value];
                             real_data.push(item);
                         }
@@ -199,6 +199,7 @@
 
                         results = response['results']
                         var data = results
+                        console.log(data)
 
                         var hchart = Highcharts.chart(divname, {
                             chart: {
@@ -277,6 +278,7 @@
 
                 });
             }
+
 
             update_virtual_network('container1');
             update_real_network('container2');
