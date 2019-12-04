@@ -71,6 +71,7 @@ class Dash(object):
                 'node_info': [],
                 'node_size': 0
                 }
+        slog.debug('get_network_ids_exp')
         #try:
         for item in result.get('node_info'):
             ip = item.get('node_ip').split(':')[0]
@@ -88,6 +89,7 @@ class Dash(object):
             country_name_list = ['United States', 'China', 'England', 'Afric','France']
             tmp_country_name = random.choice(country_name_list)
             item['node_country'] = tmp_country_name
+            slog.debug('add country {0}'.format(tmp_country_name))
 
             result_exp['node_info'].append(item)
         result_exp['node_size'] = len(result_exp['node_info'])

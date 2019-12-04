@@ -9,10 +9,12 @@
 </head>
 <body>
     <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
-    <div id="main" style="width: 900px;height:600px;"></div>
+    <div id="main" style="width: 900px;height:500px;"></div>
+    <div id="main2" style="width: 900px;height:500px;"></div>
     <script type="text/javascript">
 
         var myChart = echarts.init(document.getElementById('main'));
+        var myChart2 = echarts.init(document.getElementById('main2'));
     
         function get_pie(real_text, real_subtext, real_data){
             var keys = new Array();
@@ -142,7 +144,58 @@
             });
         } // end function update_virtual...
 
+
+        function update_real_network(myChart){
+            $.ajax({
+                cache: false,
+                type: "GET",
+                url: "/api/web/network?network_id=010000&withip=true",
+                data: null,
+                dataType : "json",
+                async: false,
+                error: function(request) {
+                    alert("发送请求失败！");
+                },
+                success: function(response) {
+                    console.log(response);
+                    results = response['results']
+                    node_info = results['node_info']
+                    node_size = results['node_size']
+
+                    var real_data = new Array();
+                    var country_map = {};
+                    var total_real_node = node_size;
+                    for (var i =0; i < node_info.length; ++i) {
+                        var country_name = node_info[i]['node_country']
+                        var node_id      = node_info[i]['node_id']
+                        var node_ip      = node_info[i]['node_ip']
+                        if (country_map.hasOwnProperty(country_name)) {
+                            country_map[country_name] += 1
+                        } else {
+                            country_map[country_name] = 0
+                        }
+                    }
+
+                    for (var cname in country_map) {
+                        var value = country_map[cname];
+                        var name = cname +"  (" + value + ")";
+                        item = {
+                            'value': value,
+                            'name': name
+                        };
+                        real_data.push(item);
+                    }
+
+                    var rn_pie = get_pie('主网物理节点分布(总数:' + total_real_node + ")", 'betatest', real_data);
+                    // 为echarts对象加载数据-------------- 
+                    myChart2.setOption(rn_pie);
+                }
+            });
+        } // end function update_real...
+
+
         update_virtual_network(myChart) ;
+        update_real_network(myChart2) ;
 
     </script>    
 </body>
