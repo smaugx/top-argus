@@ -18,6 +18,7 @@ import requests
 import redis
 import uuid
 import time
+import random
 import base64
 import copy
 import threading
@@ -211,7 +212,13 @@ def packet_drop_query():
             'begin': begin,
             'end': end
             }
-    results,total = mydash.get_packet_drop(data)
+    results = mydash.get_packet_drop(data)
+    results = []
+    tmp_time = now
+    for i in range(0,60):
+        tmp_time = tmp_time - (60 - i -1) * 60 * 1000
+        results.append([tmp_time, random.randint(0,1000)])
+
     if results:
         ret = {'status':0,'error': status_ret.get(0) , 'results': results}
         return jsonify(ret)
@@ -226,8 +233,8 @@ def packet_drop_query():
 
 
 def run():
-    #app.run(host="0.0.0.0", port= 8080, debug=True)
-    app.run()
+    app.run(host="0.0.0.0", port= 8080, debug=True)
+    #app.run()
 
 if __name__ == '__main__':
     run()

@@ -4,6 +4,7 @@
 
 import json
 import time
+import datetime
 import random
 import queue
 import copy
@@ -26,6 +27,10 @@ class Dash(object):
 
         self.iplocation_ = {}
         return
+
+    def myconverter(self, o):
+        if isinstance(o, datetime.datetime):
+            return o.__str__()
 
     def get_packet_info(self, data, limit = 50, page = 1):
         vs,total = [],0
@@ -228,16 +233,23 @@ class Dash(object):
         slog.debug('time_list size {0}'.format(len(time_list)))
 
         results = []
+        slog.info('from db size:{0} {1}'.format(len(vs), json.dumps(vs, indent = 4, default = self.myconverter)))
         for item in vs:
+            del item['timestamp']
             dest_networksize = item.get('dest_networksize')
             recv_nodes_num   = item.get('recv_nodes_num')
             if int(dest_networksize) <= 0:
+                slog.warn("dest_networksize smaller than 0")
                 continue
             send_timestamp = item.get('send_timestamp')
-            time_index = (send_timestamp - begin) % (60 * 1000)
-            drop_rate = float(recv_nodes_num) / float(dest_networksize) * 100
+            time_index = int((int(send_timestamp) - int(begin)) / (60 * 1000))
+            drop_rate =  100 - (float(recv_nodes_num) / float(dest_networksize) * 100)
             drop_rate = "%.1f" % drop_rate
             drop_rate = float(drop_rate)
+            if recv_nodes_num >= dest_networksize:
+                slog.warn('recv_nodes_num:{0} beyond dest_networksize:{1}'.format(recv_nodes_num, dest_networksize))
+                drop_rate = 0.0
+            print('send_timestamp:{0} begin:{1} time_index:{2} recv_nodes_num:{3} dest_networksize:{4} drop_rate:{5}'.format(send_timestamp, begin, time_index, recv_nodes_num, dest_networksize, drop_rate))
 
             if time_index > (len(time_list) - 1):
                 slog.warn('time_index:{0} beyond time_list length:{1}'.format(time_index, len(time_list)))
@@ -245,9 +257,13 @@ class Dash(object):
             time_drop_map[time_list[time_index]].append(drop_rate)
 
         for k,v in time_drop_map.items():
+            if not v:
+                continue
             sum_drop_rate = 0.0
             for item in v:
+                slog.debug('drop_rate: {0}'.format(item))
                 sum_drop_rate += item
+            slog.debug('sum_drop_rate:{0} size:{1}'.format(sum_drop_rate, len(v)))
             avg_drop_rate = sum_drop_rate / len(v)
             avg_drop_rate = "%.1f" % avg_drop_rate 
             avg_drop_rate = float(avg_drop_rate)

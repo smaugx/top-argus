@@ -5,6 +5,8 @@ import logging,os
 
 base_path = './log'
 pid= os.getpid()
+#TODO(smaug)
+pid = 'xx'
 path = os.path.join(base_path, 'xx-{0}.log'.format(pid))
 if not os.path.exists(base_path):
     os.mkdir(base_path)
