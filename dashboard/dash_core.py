@@ -4,6 +4,7 @@
 
 import json
 import time
+import random
 import queue
 import copy
 import os
@@ -73,6 +74,7 @@ class Dash(object):
         #try:
         for item in result.get('node_info'):
             ip = item.get('node_ip').split(':')[0]
+            '''
             if ip in self.iplocation_:
                 item['node_country'] = self.iplocation_[ip]['country_name']
             else:
@@ -82,6 +84,10 @@ class Dash(object):
                     item['node_country'] = ipinfo.get(ip).get('country_name')
                 else:
                     item['node_country'] = '' 
+            '''
+            country_name_list = ['United States', 'China', 'England', 'Afric','France']
+            tmp_country_name = random.choice(country_name_list)
+            item['node_country'] = tmp_country_name
 
             result_exp['node_info'].append(item)
         result_exp['node_size'] = len(result_exp['node_info'])
