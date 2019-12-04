@@ -202,4 +202,56 @@ class Dash(object):
                 result['network_info'].append(ninfo)
             result['network_size'] = len(result['network_info'])
             return result
- 
+
+     
+    # count packet_drop_rate
+    def get_packet_drop(self, data):
+        vs,total = [],0
+        limit, page = None, None
+        vs,total = self.packet_info_sql.query_from_db(data, limit, page)
+        if not vs:
+            slog.debug('packet_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
+
+        begin = data.get('begin')  # ms
+        end = data.get('end')      # ms
+        tmp_time = begin
+
+        time_list = []
+        time_drop_map = {}
+        while  tmp_time <= end:
+            tmp_time = tmp_time + 60 * 1000             # 1 min
+            time_list.append(tmp_time)
+            time_drop_map[tmp_time] = []
+        time_list.append(tmp_time)
+        time_drop_map[tmp_time] = []
+
+        slog.debug('time_list size {0}'.format(len(time_list)))
+
+        results = []
+        for item in vs:
+            dest_networksize = item.get('dest_networksize')
+            recv_nodes_num   = item.get('recv_nodes_num')
+            if int(dest_networksize) <= 0:
+                continue
+            send_timestamp = item.get('send_timestamp')
+            time_index = (send_timestamp - begin) % (60 * 1000)
+            drop_rate = float(recv_nodes_num) / float(dest_networksize) * 100
+            drop_rate = "%.1f" % drop_rate
+            drop_rate = float(drop_rate)
+
+            if time_index > (len(time_list) - 1):
+                slog.warn('time_index:{0} beyond time_list length:{1}'.format(time_index, len(time_list)))
+                continue
+            time_drop_map[time_list[time_index]].append(drop_rate)
+
+        for k,v in time_drop_map.items():
+            sum_drop_rate = 0.0
+            for item in v:
+                sum_drop_rate += item
+            avg_drop_rate = sum_drop_rate / len(v)
+            avg_drop_rate = "%.1f" % avg_drop_rate 
+            avg_drop_rate = float(avg_drop_rate)
+            results.append([k, avg_drop_rate])
+        return results
+
+

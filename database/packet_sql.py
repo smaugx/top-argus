@@ -49,9 +49,15 @@ class PacketInfoSql(Bean):
             else:
                 where.append(' dest_node_id = "{0}" '.format(data.get('dest_node_id')))
 
+        if data.get('begin'):
+            where.append(' `send_timestamp` >= {0} '.format(data.get('begin')))
+        if data.get('end'):
+            where.append(' `send_timestamp` <= {0} '.format(data.get('end')))
+
         where = ' and '.join(where)
         vs,total = [],0
-        vs = cls.select_vs(where=where, page=page, limit=limit, order=' timestamp desc ')
+        #vs = cls.select_vs(where=where, page=page, limit=limit, order=' timestamp desc ')
+        vs = cls.select_vs(where=where, page=page, limit=limit, order=' send_timestamp desc ')
         total = cls.total(where = where )
         slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
         return vs, total

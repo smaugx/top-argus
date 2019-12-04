@@ -178,6 +178,47 @@ def networkid_query():
     else:
         ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
         return jsonify(ret)
+
+# GET /api/web/packet_drop/?dest_node_id=680000&begin=1508954899&end=15089584959
+@app.route('/api/web/packet_drop/', methods = ['GET'])
+@app.route('/api/web/packet_drop', methods = ['GET'])
+def packet_drop_query():
+    now = int(time.time() * 1000)
+    latest_hour = now - 60 * 60 * 1000
+    dest_node_id = request.args.get('dest_node_id')     or None
+    begin        = request.args.get('begin')            or latest_hour
+    end          = request.args.get('end')              or  now
+
+    try:
+        begin = int(begin)
+        end = int(end)
+        if begin >= end or (end - begin >= 24 * 60 * 60 * 1000 ):
+            begin = end - 60 * 60 * 1000
+        if end > now or (now - end  > 10 * 24 * 60 * 60 * 1000):
+            end = now
+            begin = latest_hour
+    except Exception as e:
+        begin = latest_hour
+        end = now
+
+    status_ret = {
+            0:'OK',
+            -1:'没有数据',
+            }
+    
+    data = {
+            'dest_node_id': dest_node_id,
+            'begin': begin,
+            'end': end
+            }
+    results,total = mydash.get_packet_drop(data)
+    if results:
+        ret = {'status':0,'error': status_ret.get(0) , 'results': results}
+        return jsonify(ret)
+    else:
+        ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
+        return jsonify(ret)
+ 
  
 
 
