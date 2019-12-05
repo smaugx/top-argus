@@ -37,6 +37,18 @@ class Dash(object):
         vs,total = self.packet_info_sql.query_from_db(data, limit, page)
         if not vs:
             slog.debug('packet_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
+        for i in range(0, len(vs)):
+            dest_networksize = int(vs[i].get('dest_networksize'))
+            recv_nodes_num   = int(vs[i].get('recv_nodes_num'))
+            if dest_networksize <= 0 or recv_nodes_num > dest_networksize:
+                vs[i]['drop_rate'] = '0.0'
+            else:
+                drop_rate = 100 - float(recv_nodes_num) / dest_networksize * 100
+                drop_rate = float(drop_rate)
+                drop_rate = '%.1f' % drop_rate
+                vs[i]['drop_rate'] = drop_rate
+
+
         return vs,total
 
     def get_packet_recv_info(self, data, limit = 50, page = 1):

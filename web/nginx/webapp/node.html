@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+        <title>
+           TOPARGUS-主网监控系统 
+        </title>
+        <!-- 引入 echarts.js -->
+        <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+        <script type="text/javascript" src="http://cdn.highcharts.com.cn/highcharts/highcharts.js"></script>
+        <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+        <script type="text/javascript" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+        <link rel=stylesheet type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
+         <link rel="stylesheet" type="text/css" href="css/dmaku.css" />
+    </head>
+    
+    <body>
+
+<div class="main">
+        <div class="navi_body">
+                <div class="navi_head">
+                        <div style="width:80%; margin-left:auto; margin-right:auto;">
+                                <span>
+                    <p class="navi_title"><a href="/index.html">首页</a></p>
+                                </span>
+
+                                <span>
+                                        <p class="navi_title"><a href="/packet.html">收包情况</a></p>
+                                        <p><a href="/packet.html?dest_node_id=680000">高级网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=690000">共识网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=640000">Rec 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=650000">Zec 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=660000">Edge 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=670000">Archive 网络</a></p>
+                                </span>
+
+                                <span>
+                                        <p class="navi_title"><a href="/system.html">系统情况</a></p>
+                                </span>
+
+                                <span>
+                                        <p class="navi_title"><a href="/about.html">关于</a></p>
+                                </span>
+                        </div>
+                </div>
+        </div>
+
+
+    <div class="main_body">
+        <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+        <table id="packet_table" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>chain_hash</th>
+                        <th>chain_type</th>
+                        <th>msg_size</th>
+                        <th>packet_size</th>
+                        <th>recv_nodes</th>
+                        <th>dest_network</th>
+                        <th bgcolor="#ff0000">drop_rate</th>
+                        <th>hop_num</th>
+                        <th>taking</th>
+                        <th>src_node_id</th>
+                        <th>dest_node_id</th>
+                        <th>timestamp</th>
+                    </tr>
+                </thead>
+                <tfoot>
+                    <tr>
+                        <th>chain_hash</th>
+                        <th>chain_type</th>
+                        <th>msg_size</th>
+                        <th>packet_size</th>
+                        <th>recv_nodes</th>
+                        <th>dest_network</th>
+                        <th bgcolor="#ff0000">drop_rate</th>
+                        <th>hop_num</th>
+                        <th>taking</th>
+                        <th>src_node_id</th>
+                        <th>dest_node_id</th>
+                        <th>timestamp</th>
+                    </tr>
+                </tfoot>
+        </table>
+    </div>
+
+</div>
+
+
+
+        <script type="text/javascript">
+
+            //$.fn.dataTable.ext.errMode = 'throw';
+            $.fn.dataTable.ext.errMode = function(s,h,m){}
+
+
+
+function getQueryString(name) {
+    let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+    let r = window.location.search.substr(1).match(reg);
+    if (r != null) {
+        return unescape(r[2]);
+    };
+    return '';
+ }
+
+	    $(document).ready(function() {
+                $('#packet_table').DataTable( {
+                    "pageLength": 200,
+                    "ajax": {
+                            "type" : "GET",
+                            "url" : "/api/web/packet?" + "dest_node_id=" + getQueryString("dest_node_id"),
+/*
+                            "success": function (response) {
+                                return response.results;
+                            }       
+*/
+                            "dataSrc": function (response) {
+                                var return_data = new Array();
+                                for (var i =0; i < response['results'].length; ++i) {
+                                    var item = response['results'][i];
+                                    var new_item = {};
+                                    new_item['src_node_id'] = '<a href="/packet.html?dest_node_id='+item['src_node_id']+'">'+ item['src_node_id'].substring(0,7)+"..."+item['src_node_id'].substring(66,72) + '</a>';
+                                    new_item['dest_node_id'] = '<a href="/packet.html?dest_node_id='+item['dest_node_id']+'">'+ item['dest_node_id'].substring(0,7)+"..."+item['dest_node_id'].substring(66,72) + '</a>';
+                                    new_item['chain_hash'] = '<a href="/api/web/packet?chain_hash='+item['chain_hash']+'">'+ item['chain_hash'] + '</a>';
+                                    new_item['chain_type'] = item['chain_msgid'].toString(16);
+                                    new_item['msg_size'] = item['chain_msg_size'];
+                                    new_item['packet_size'] = item['packet_size'];
+                                    new_item['recv_nodes'] = item['recv_nodes_num'];
+                                    //new_item['dest_network'] = item['dest_networksize'];
+                                    new_item['dest_network'] = '<a href="/api/web/network?network_id='+item['dest_node_id'].substring(0,17) +'">'+ item['dest_networksize'] + '</a>';
+                                    new_item['drop_rate'] = item['drop_rate'];
+                                    if (item['drop_rate'] > 10.0) {
+                                        new_item['drop_rate'] = '<span style="color:red;font-weight:bold">' + item['drop_rate'] + '</span>';
+                                    }
+                                    new_item['hop_num'] = item['hop_num'];
+                                    new_item['taking'] = item['taking'];
+                                    new_item['timestamp'] = item['timestamp'].substring(4,29);
+                                    return_data.push(new_item);
+                                }
+                                return return_data;
+                            }
+                    },
+                    "columns": [
+                        { "data": "chain_hash" },
+                        { "data": "chain_type" },
+                        { "data": "msg_size" },
+                        { "data": "packet_size" },
+                        { "data": "recv_nodes" },
+                        { "data": "dest_network" },
+                        { "data": "drop_rate" },
+                        { "data": "hop_num" },
+                        { "data": "taking" },
+                        { "data": "src_node_id" },
+                        { "data": "dest_node_id" },
+                        { "data": "timestamp" }
+                    ]
+
+                } ); // end of $('#packet_table').DataTable( {
+
+} ); // end of $(document).ready(function() {
+
+        </script>
+    </body>
+
+</html>

@@ -117,7 +117,7 @@ def packet_recv_query():
 @app.route('/api/web/network/', methods = ['GET'])
 @app.route('/api/web/network', methods = ['GET'])
 def network_query():
-    network_id = request.args.get('network_id')       or None
+    network_id = request.args.get('network_id')       or '010000'
     node_id    = request.args.get('node_id')          or None
     node_ip    = request.args.get('node_ip')          or None
     onlysize   = request.args.get('onlysize')         or None

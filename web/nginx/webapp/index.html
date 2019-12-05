@@ -9,13 +9,58 @@
         <!-- 引入 echarts.js -->
         <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
         <script type="text/javascript" src="http://cdn.highcharts.com.cn/highcharts/highcharts.js"></script>
+ <link rel="stylesheet" type="text/css" href="css/dmaku.css" />
     </head>
     
     <body>
-        <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
-        <div id="container1" style="min-width:400px;height:400px"></div>
-        <div id="container2" style="min-width:400px;height:400px"></div>
-        <div id="container3" style="min-width:1400px;height:400px"></div>
+
+<div class="main">
+        <div class="navi_body">
+                <div class="navi_head">
+                        <div style="width:80%; margin-left:auto; margin-right:auto;">
+                                <span>
+                    <p class="navi_title"><a href="/index.html">首页</a></p>
+                                </span>
+                                <span>
+                    <p class="navi_title"><a href="/packet.html">收包情况</a></p>
+                                        <p><a href="/packet.html?dest_node_id=680000">高级网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=690000">共识网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=640000">Rec 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=650000">Zec 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=660000">Edge 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=670000">Archive 网络</a></p>
+                                </span>
+
+                                <span>
+                                        <p class="navi_title"><a href="/network.html">P2P网络</a></p>
+                                </span>
+
+                                <span>
+                                    <p class="navi_title"><a href="/system.html">系统情况</a></p>
+                                </span>
+                                <span>
+                                    <p class="navi_title"><a href="/about.html">关于</a></p>
+                                </span>
+                        </div>
+                </div>
+        </div>
+
+
+    <div class="main_body">
+
+        <div class="pie">
+            <div id="container1"></div>
+            <div id="container2"></div>
+        </div>
+
+        <div class="line">
+        <div id="container3"></div>
+        </div>
+
+</div>
+
+
+
         <script type="text/javascript">
 /*
             // 创建渐变色
@@ -30,7 +75,8 @@
             });
 */
 
-            function get_pie(real_text, real_subtext, real_data) {
+            function get_pie(real_text, real_subtext, real_data, network_map) {
+                        console.log(network_map);
                 var chart = {
                     title: {
                         text: real_text 
@@ -49,8 +95,20 @@
                                     color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
                                 },
                                 connectorColor: 'silver'
+                            },
+                            events: {
+                                click: function(e) {
+                                           if (network_map == null) {
+                                               return;
+                                           }
+                                           var network_id = network_map[e.point.name];
+                                           console.log(network_id);
+                            location.href = "/network.html?network_id=" + network_id;
+                                    //window.open(e.point.url);
+                                    //这里的url要后面的data里给出
+                                    }
                             }
-                        }
+                        } // end pie
                     },
                     series: [{
                         type: 'pie',
@@ -89,6 +147,7 @@
                             'Val': 1,
                             'Other': 1
                         };
+                        var network_map = new Object();
                         for (var i = 0; i < network_info.length; ++i) {
                             var value = network_info[i]['network_size'];
                             var name = network_info[i]['network_id'];
@@ -128,10 +187,12 @@
                                 'name': name
                             }; */
                             item = [name, value]
+                            network_map[name] = network_info[i]['network_id'];
                             real_data.push(item);
                         }
 
-                        var vn_pie = get_pie('主网虚拟节点分布(总数:' + total_virtual_node + ")", '节点占比', real_data);
+                        console.log(network_map);
+                        var vn_pie = get_pie('主网虚拟节点分布(总数:' + total_virtual_node + ")", '节点占比', real_data, network_map);
                         // 构建图表
                         var virtual_node_chart = Highcharts.chart(divname, vn_pie);
                     }
@@ -175,7 +236,7 @@
                             real_data.push(item);
                         }
 
-                        var rn_pie = get_pie('主网物理节点分布(总数:' + total_real_node + ")", '国家占比', real_data);
+                        var rn_pie = get_pie('主网物理节点分布(总数:' + total_real_node + ")", '国家占比', real_data, null);
 
                         // 构建图表
                         var real_node_chart = Highcharts.chart(divname, rn_pie);
@@ -199,7 +260,7 @@
 
                         results = response['results']
                         var data = results
-                        console.log(data)
+                        //console.log(data)
 
                         var hchart = Highcharts.chart(divname, {
                             chart: {
