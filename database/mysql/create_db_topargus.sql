@@ -53,3 +53,17 @@ CREATE TABLE IF NOT EXISTS network_info_table(
 )
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;
+
+
+/* 网络丢包率*/
+DROP TABLE IF EXISTS packet_drop_info_table;
+CREATE TABLE IF NOT EXISTS packet_drop_info_table(
+                network_id VARCHAR(20) NOT NULL,
+                timestamp bigint(20) unsigned DEFAULT 0,
+                drop_rate float(5,1) DEFAULT 0.0,
+                INDEX (network_id)
+)
+        ENGINE =InnoDB
+        DEFAULT CHARSET =utf8;
+
+

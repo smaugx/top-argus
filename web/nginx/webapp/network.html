@@ -52,21 +52,29 @@
 
 
     <div class="main_body">
-        <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
-        <table id="packet_table" class="display" style="width:100%">
-                <thead>
-                    <tr>
-                        <th>node_id</th>
-                        <th>node_ip</th>
-                    </tr>
-                </thead>
-                <tfoot>
-                    <tr>
-                        <th>node_id</th>
-                        <th>node_ip</th>
-                    </tr>
-                </tfoot>
-        </table>
+
+
+        <div class="line" id="line_container">
+        </div>
+
+        <div class="packet_net">
+            <table id="packet_table" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>node_id</th>
+                            <th>node_ip</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th>node_id</th>
+                            <th>node_ip</th>
+                        </tr>
+                    </tfoot>
+            </table>
+        </div>
+
+
     </div>
 
 </div>
@@ -78,8 +86,6 @@
             //$.fn.dataTable.ext.errMode = 'throw';
             $.fn.dataTable.ext.errMode = function(s,h,m){}
 
-
-
 function getQueryString(name) {
     let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
     let r = window.location.search.substr(1).match(reg);
@@ -88,6 +94,105 @@ function getQueryString(name) {
     };
     return '';
  }
+
+
+
+            function update_drop_rate(divname) {
+                var end = Date.now();
+                var begin = end - 60 * 60 * 1000;
+                $.ajax({
+                    cache: false,
+                    type: "GET",
+                    url: "/api/web/packet_drop?begin="+ begin+ "&end=" + end + "&dest_node_id=" + getQueryString("network_id"),
+                    data: null,
+                    dataType: "json",
+                    async: false,
+                    error: function(request) {
+                        alert("发送请求失败！");
+                    },
+                    success: function(response) {
+
+                        results = response['results']
+                        var data = results
+                        //console.log(data)
+
+                        var hchart = Highcharts.chart(divname, {
+                            chart: {
+                                zoomType: 'x'
+                            },
+                            title: {
+                                text: '全网丢包率走势图'
+                            },
+                            subtitle: {
+                                text: document.ontouchstart === undefined ? '鼠标拖动可以进行缩放': '手势操作进行缩放'
+                            },
+                            xAxis: {
+                                type: 'datetime',
+                                dateTimeLabelFormats: {
+                                    millisecond: '%H:%M:%S.%L',
+                                    second: '%H:%M:%S',
+                                    minute: '%H:%M',
+                                    hour: '%H:%M',
+                                    day: '%m-%d',
+                                    week: '%m-%d',
+                                    month: '%Y-%m',
+                                    year: '%Y'
+                                }
+                            },
+                            tooltip: {
+                                dateTimeLabelFormats: {
+                                    millisecond: '%H:%M:%S.%L',
+                                    second: '%H:%M:%S',
+                                    minute: '%H:%M',
+                                    hour: '%H:%M',
+                                    day: '%Y-%m-%d',
+                                    week: '%m-%d',
+                                    month: '%Y-%m',
+                                    year: '%Y'
+                                }
+                            },
+                            yAxis: {
+                                title: {
+                                    text: '丢包率(%)'
+                                }
+                            },
+                            legend: {
+                                enabled: false
+                            },
+                            plotOptions: {
+                                area: {
+                                    fillColor: {
+                                        linearGradient: {
+                                            x1: 0,
+                                            y1: 0,
+                                            x2: 0,
+                                            y2: 1
+                                        },
+                                        stops: [[0, Highcharts.getOptions().colors[0]], [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]]
+                                    },
+                                    marker: {
+                                        radius: 2
+                                    },
+                                    lineWidth: 1,
+                                    states: {
+                                        hover: {
+                                            lineWidth: 1
+                                        }
+                                    },
+                                    threshold: null
+                                }
+                            },
+                            series: [{
+                                type: 'area',
+                                name: '平均丢包率',
+                                data: data
+                            }]
+                        });
+
+                    }
+
+                });
+            }
 
 	    $(document).ready(function() {
                 $('#packet_table').DataTable( {
@@ -121,6 +226,9 @@ function getQueryString(name) {
                 } ); // end of $('#packet_table').DataTable( {
 
 } ); // end of $(document).ready(function() {
+
+
+update_drop_rate('line_container');
 
         </script>
     </body>

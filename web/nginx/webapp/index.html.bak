@@ -246,12 +246,10 @@
 
 
             function update_drop_rate(divname) {
-                var end = Date.now();
-                var begin = end - 60 * 60 * 1000;
                 $.ajax({
                     cache: false,
                     type: "GET",
-                    url: "/api/web/packet_drop/?begin=" + begin + "&end=" + end,
+                    url: "/api/web/packet_drop?begin=1575295008608&end=1575295128183",
                     data: null,
                     dataType: "json",
                     async: false,

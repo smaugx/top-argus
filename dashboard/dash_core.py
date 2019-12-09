@@ -10,7 +10,7 @@ import queue
 import copy
 import os
 import threading
-from database.packet_sql import PacketInfoSql, PacketRecvInfoSql, NetworkInfoSql
+from database.packet_sql import PacketInfoSql, PacketRecvInfoSql, NetworkInfoSql,DropRateInfoSql
 from common.slogging import slog
 import common.sipinfo as sipinfo
 
@@ -21,6 +21,7 @@ class Dash(object):
         self.packet_info_sql = PacketInfoSql()
         self.packet_recv_info_sql = PacketRecvInfoSql()
         self.network_info_sql = NetworkInfoSql()
+        self.packet_drop_rate_sql = DropRateInfoSql()
 
         self.network_ids_lock_ = threading.Lock()
         self.network_ids_ = {}
@@ -34,7 +35,7 @@ class Dash(object):
 
     def get_packet_info(self, data, limit = 50, page = 1):
         vs,total = [],0
-        vs,total = self.packet_info_sql.query_from_db(data, limit, page)
+        vs,total = self.packet_info_sql.query_from_db(data, page = page, limit = limit)
         if not vs:
             slog.debug('packet_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
         for i in range(0, len(vs)):
@@ -53,7 +54,7 @@ class Dash(object):
 
     def get_packet_recv_info(self, data, limit = 50, page = 1):
         vs,total = [],0
-        vs,total = self.packet_recv_info_sql.query_from_db(data, limit, page)
+        vs,total = self.packet_recv_info_sql.query_from_db(data, limit = limit, page = page)
         if not vs:
             slog.debug('packet_recv_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
         return vs,total
@@ -223,14 +224,9 @@ class Dash(object):
      
     # count packet_drop_rate
     def get_packet_drop(self, data):
-        vs,total = [],0
-        limit, page = None, None
-        vs,total = self.packet_info_sql.query_from_db(data, limit, page)
-        if not vs:
-            slog.debug('packet_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
-
         begin = data.get('begin')  # ms
         end = data.get('end')      # ms
+
         tmp_time = begin
 
         time_list = []
@@ -245,6 +241,38 @@ class Dash(object):
         slog.debug('time_list size {0}'.format(len(time_list)))
 
         results = []
+        dest_node_id = data.get('dest_node_id')
+        if not dest_node_id or dest_node_id == None:
+            dest_node_id = "allnet"
+        # try to get from db first
+        drop_vs, drop_total = [], 0
+        drop_query_data =  {
+                "network_id": dest_node_id,
+                "begin": time_list[0],
+                "end": time_list[-1]
+                }
+        drop_vs, drop_total = self.packet_drop_rate_sql.query_from_db(drop_query_data)
+        cache_latest_timestamp = 0
+        if drop_vs:
+            cache_latest_timestamp = int(drop_vs[0].get('timestamp'))
+            slog.info('droprate get {0} form cache_db'.format(len(drop_vs)))
+
+        for item in drop_vs:
+            k = item.get('timestamp')
+            avg_drop_rate = item.get('drop_rate')
+            results.append([k, avg_drop_rate])
+
+        if cache_latest_timestamp != 0:
+            data['begin'] = cache_latest_timestamp
+            slog.info('update begintime {0}'.format(cache_latest_timestamp))
+
+        # get packet info from db
+        vs,total = [],0
+        limit, page = None, None
+        vs,total = self.packet_info_sql.query_from_db(data, limit = limit, page = page)
+        if not vs:
+            slog.debug('packet_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
+
         slog.info('from db size:{0} {1}'.format(len(vs), json.dumps(vs, indent = 4, default = self.myconverter)))
         for item in vs:
             del item['timestamp']
@@ -268,6 +296,7 @@ class Dash(object):
                 continue
             time_drop_map[time_list[time_index]].append(drop_rate)
 
+        
         for k,v in time_drop_map.items():
             if not v:
                 continue
@@ -280,6 +309,15 @@ class Dash(object):
             avg_drop_rate = "%.1f" % avg_drop_rate 
             avg_drop_rate = float(avg_drop_rate)
             results.append([k, avg_drop_rate])
+
+            tmp_drop_db_item = {
+                    "network_id": dest_node_id,
+                    "timestamp": k,
+                    "drop_rate": avg_drop_rate
+                    }
+            self.packet_drop_rate_sql.insert_to_db(tmp_drop_db_item)
+
+
         return results
 
 

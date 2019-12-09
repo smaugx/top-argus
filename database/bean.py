@@ -81,6 +81,7 @@ class Bean(object):
 
     @classmethod
     def select(cls, cols=None, where=None, order=None, limit=None, page=None, offset=None):
+        print('limit:{0} page:{1}'.format(limit, page))
         if cols is None:
             cols = cls._cols
 
@@ -104,6 +105,7 @@ class Bean(object):
                 offset = 0
             sql = '%s OFFSET %s' % (sql, offset)
 
+        print(sql)
         return cls._db.query_all(sql )
 
     @classmethod

@@ -49,18 +49,30 @@ def packet_query():
     send_node_id = request.args.get('send_node_id')     or None
     src_node_id  = request.args.get('src_node_id')      or None
     dest_node_id = request.args.get('dest_node_id')     or None
-    limit        = request.args.get('limit')            or None
-    page         = request.args.get('page')             or None
+    limit        = request.args.get('limit')            or 200
+    page         = request.args.get('page')             or 1
 
-    if chain_hash:
-        chain_hash = int(chain_hash)
-    if chain_msgid:
-        chain_msgid = int(chain_msgid)
 
     status_ret = {
             0:'OK',
             -1:'没有数据',
+            -2: '参数不合法',
             }
+
+    try:
+        if chain_hash:
+            chain_hash = int(chain_hash)
+        if chain_msgid:
+            chain_msgid = int(chain_msgid)
+        if limit != None:
+            limit = int(limit)
+        if page != None:
+            page = int(page)
+    except Exception as e:
+        slog.warn("catch exception:{0}".format(e))
+        ret = {'status': -2,'error': status_ret.get(-2) , 'results': []}
+        return jsonify(ret)
+
     
     data = {
             'chain_hash': chain_hash,
@@ -73,10 +85,10 @@ def packet_query():
             }
     results,total = mydash.get_packet_info(data, limit, page)
     if results:
-        ret = {'status':0,'error': status_ret.get(0) , 'results': results}
+        ret = {'status':0,'error': status_ret.get(0) , 'results': results, 'total': total}
         return jsonify(ret)
     else:
-        ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
+        ret = {'status': -1,'error': status_ret.get(-1) , 'results': results, 'total': total}
         return jsonify(ret)
  
 # GET /api/web/packet_recv/?chain_hash=8180269&recv_node_id=01000&recv_node_ip=127.0.0.1
@@ -104,10 +116,10 @@ def packet_recv_query():
             }
     results,total = mydash.get_packet_recv_info(data, limit, page)
     if results:
-        ret = {'status':0,'error': status_ret.get(0) , 'results': results}
+        ret = {'status':0,'error': status_ret.get(0) , 'results': results, 'total': total}
         return jsonify(ret)
     else:
-        ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
+        ret = {'status': -1,'error': status_ret.get(-1) , 'results': results, 'total': total}
         return jsonify(ret)
  
 # GET /api/web/network/?onlysize=[true/false]&withip=[true/false]
@@ -213,11 +225,14 @@ def packet_drop_query():
             'end': end
             }
     results = mydash.get_packet_drop(data)
+
+    '''
     results = []
     tmp_time = now
     for i in range(0,60):
         tmp_time = tmp_time - (60 - i -1) * 60 * 1000
         results.append([tmp_time, random.randint(0,1000)])
+    '''
 
     if results:
         ret = {'status':0,'error': status_ret.get(0) , 'results': results}
@@ -233,8 +248,8 @@ def packet_drop_query():
 
 
 def run():
-    app.run(host="0.0.0.0", port= 8080, debug=True)
-    #app.run()
+    #app.run(host="0.0.0.0", port= 8080, debug=True)
+    app.run()
 
 if __name__ == '__main__':
     run()

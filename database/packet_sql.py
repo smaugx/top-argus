@@ -44,7 +44,7 @@ class PacketInfoSql(Bean):
                 where.append(' src_node_id = "{0}" '.format(data.get('src_node_id')))
 
         if data.get('dest_node_id'):
-            if len(data.get('dest_node_id')) <= 10:
+            if len(data.get('dest_node_id')) <= 20:
                 where.append(' dest_node_id regexp "{0}" '.format(data.get('dest_node_id')))
             else:
                 where.append(' dest_node_id = "{0}" '.format(data.get('dest_node_id')))
@@ -161,7 +161,7 @@ class NetworkInfoSql(Bean):
         where ,vs,total = [],[],0
 
         if data.get('network_id'):
-            if len(data.get('network_id')) <= 10:
+            if len(data.get('network_id')) <= 20:
                 where.append(' network_id regexp "{0}" '.format(data.get('network_id')))
             else:
                 where.append(' network_id = "{0}" '.format(data.get('network_id')))
@@ -169,6 +169,60 @@ class NetworkInfoSql(Bean):
         where = ' and '.join(where)
         vs,total = [],0
         vs = cls.select_vs(where=where, page=page, limit=limit, order='')
+        total = cls.total(where = where )
+        slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
+        return vs, total
+
+    @classmethod
+    def ignore_insert_to_db(cls,data):
+        return cls.ignore_insert(data = data)
+
+    @classmethod
+    def update_insert_to_db(cls,data):
+        return cls.update_insert(data = data)
+
+    @classmethod
+    def insert_to_db(cls,data):
+        return cls.insert(data = data)
+    
+    @classmethod
+    def update_incry(cls,clause):
+        print('update table %s: %s ' % (cls._tbl,clause))
+        return cls.update(clause = clause)
+
+    @classmethod
+    def update_case(cls,data=None, where=''):
+        print('update table network_info_table: %s where:%s' % (json.dumps(data),where))
+        return cls.update_dict(data = data, where = where )
+
+
+# drop_rate of network_id
+class DropRateInfoSql(Bean):
+    _tbl = 'packet_drop_info_table'
+    _cols = 'network_id,timestamp,drop_rate'
+
+    def __init__(self):
+        return
+
+    @classmethod
+    def query_from_db(cls,data,page = 1, limit = 50):
+        where ,vs,total = [],[],0
+
+        if data.get('network_id'):
+            if len(data.get('network_id')) <= 20:
+                where.append(' network_id regexp "{0}" '.format(data.get('network_id')))
+            else:
+                where.append(' network_id = "{0}" '.format(data.get('network_id')))
+
+
+        if data.get('begin'):
+            where.append(' `timestamp` >= {0} '.format(data.get('begin')))
+        if data.get('end'):
+            where.append(' `timestamp` <= {0} '.format(data.get('end')))
+
+        where = ' and '.join(where)
+        vs,total = [],0
+        vs = cls.select_vs(where=where, page=page, limit=limit, order=' timestamp desc')
         total = cls.total(where = where )
         slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
         return vs, total
