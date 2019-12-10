@@ -21,6 +21,7 @@ import threading
 import random
 import operator
 from common.slogging import slog
+from urllib.parse import urljoin
 
 #xnetwork-08:35:49.631-T1719:[Keyfo]-(elect_vhost.cc: HandleRumorMessage:381): original_elect_vhost_send local_node_id:010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3 chain_hash:3340835543 chain_msgid:655361 chain_msg_size:1382 send_timestamp:1573547735068 src_node_id:67000000ff7fff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716 dest_node_id:67000000ff7fff7fffffffffffffffff0000000061d1343f82769c3eff69c5448e7b1fe5 is_root:0 broadcast:0
 
@@ -59,6 +60,8 @@ gconfig = {
 NodeIdMap = {} # keep all nodeid existing: key is node_id, value is timestamp (ms)
 mark_down_flag = False
 
+alarm_proxy_host = '127.0.0.1:9090'
+
 
 def dict_cmp(a, b):
     typea = isinstance(a, dict) 
@@ -81,8 +84,9 @@ def dict_cmp(a, b):
     return True
 
 def update_config_from_remote():
-    global gconfig
-    url = 'http://127.0.0.1:9090/api/config/'
+    global gconfig, alarm_proxy_host
+    url = 'http://' + alarm_proxy_host
+    url = urljoin(url, '/api/config/')
     my_headers = {
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36',
             'Content-Type': 'application/json;charset=UTF-8',
@@ -526,7 +530,9 @@ def run_watch(filename = './xtop.log'):
         slog.info("grep_log finish, sendq.size = {0} recvq.size = {1}, offset = {2}".format(SENDQ.qsize(), RECVQ.qsize(), offset))
 
 def do_alarm(alarm_list):
-    url = 'http://127.0.0.1:9090/api/alarm/'
+    global alarm_proxy_host
+    url = 'http://' + alarm_proxy_host
+    url = urljoin(url, '/api/alarm/')
     my_headers = {
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36',
             'Content-Type': 'application/json;charset=UTF-8',
@@ -613,6 +619,13 @@ def consumer_recv_test():
 
     
 if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        slog.error('param invalid,usage: ./logwatch.py 127.0.0.1:9090 ./xtop.log')
+        sys.exit()
+
+    alarm_proxy_host = sys.argv[
+
+
     if not update_config_from_remote():
         slog.error('using default config to start: {0}'.format(json.dumps(gconfig)))
 

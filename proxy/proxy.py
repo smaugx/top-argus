@@ -108,6 +108,7 @@ def config_update():
             slog.info(out)
             ret['status'] = 0
             ret['error'] = status_ret.get(0)
+            ret['config'] = config
             return jsonify(ret)
         if payload.get('test') == 'false':
             out = 'update config: {0}, old_config: {1}'.format(json.dumps(config, indent = 4), json.dumps(gconfig, indent = 4))
@@ -168,7 +169,8 @@ def run():
     dumpdb_th = threading.Thread(target = alarm_entity.dump_db)
     dumpdb_th.start()
 
-    app.run(host="0.0.0.0", port= 9090, debug=True)
+    #app.run(host="0.0.0.0", port= 9090, debug=True)
+    app.run()
     alarm_th.join()
 
 
