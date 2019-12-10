@@ -1,6 +1,7 @@
 ﻿body{
 	margin:0;
-	font-family:'微软雅黑','Times New Roman', Times, serif;background:#fff
+	font-family:'微软雅黑','Times New Roman', Times, serif;
+    background:#fff
 }
 
 .main {
@@ -20,8 +21,24 @@
 
 .main_body{
    background-color:#DDDDDD;
-   height:915px;
+   height: 100%;
 }
+
+.markdown_body {
+   background-color:white;
+   height: 100%;
+} 
+
+.markdown_main_body {
+    width: 854px;
+    margin:0 auto;
+} 
+
+
+.system_body {
+    height: 950px;
+    margin:0 auto;
+} 
 
 .pie{
     height:60%;

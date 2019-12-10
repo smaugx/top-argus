@@ -85,6 +85,7 @@
 
             //$.fn.dataTable.ext.errMode = 'throw';
             $.fn.dataTable.ext.errMode = function(s,h,m){}
+             Highcharts.setOptions({ global: { useUTC: false } });
 
 function getQueryString(name) {
     let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");

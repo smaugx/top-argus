@@ -30,7 +30,7 @@ http{
 
         upstream mydash{
                  ip_hash;
-                 server 192.168.50.242:8080 weight=1;
+                 server 192.168.50.242:5000 weight=1;
                  #server 192.168.22.230:8080 weight=1;
                 }
 
@@ -39,34 +39,12 @@ http{
             server_name 192.168.50.242;
             charset    utf-8; #设置编码为utf-8;
 
-            #location / {
-            #    root   html;
-            #    index  index.html index.htm;
-            #}
+            location /api {
+                  proxy_pass http://mydash;
+            }
 
-            #location ~ .*\.(jsp|do|action)$
             location / {
-                    proxy_next_upstream http_502 http_504 error timeout invalid_header;
-                    proxy_pass http://mydash;
-                    # 真实的客户端IP
-                    proxy_set_header   X-Real-IP        $remote_addr; 
-                    # 请求头中Host信息
-                    proxy_set_header   Host             $host; 
-                    # 代理路由信息，此处取IP有安全隐患
-                    proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
-                    # 真实的用户访问协议
-                    proxy_set_header   X-Forwarded-Proto $scheme;
-            }
-            #静态文件交给nginx处理
-            location ~ .*\.(htm|html|gif|jpg|jpeg|png|bmp|swf|ioc|rar|zip|txt|flv|mid|doc|ppt|pdf|xls|mp3|wma|json)$
-            {
-                    root  /usr/local/smaug/nginx/webapp;
-                    expires 2h;
-            }
-            #静态文件交给nginx处理
-            location ~ .*\.(js|css)?$
-            {
-                    root /usr/local/smaug/nginx/webapp;
+                root webapp;
             }
 
             error_page   500 502 503 504  /50x.html;  
