@@ -14,6 +14,9 @@ from database.packet_sql import PacketInfoSql, PacketRecvInfoSql, NetworkInfoSql
 from common.slogging import slog
 import common.sipinfo as sipinfo
 
+def get_list_first(l):
+    return l[0]
+
 
 class Dash(object):
     def __init__(self):
@@ -273,7 +276,7 @@ class Dash(object):
         if not vs:
             slog.debug('packet_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
 
-        slog.info('from db size:{0} {1}'.format(len(vs), json.dumps(vs, indent = 4, default = self.myconverter)))
+        #slog.info('from db size:{0} {1}'.format(len(vs), json.dumps(vs, indent = 4, default = self.myconverter)))
         for item in vs:
             del item['timestamp']
             dest_networksize = item.get('dest_networksize')
@@ -287,9 +290,9 @@ class Dash(object):
             drop_rate = "%.1f" % drop_rate
             drop_rate = float(drop_rate)
             if recv_nodes_num >= dest_networksize:
-                slog.warn('recv_nodes_num:{0} beyond dest_networksize:{1}'.format(recv_nodes_num, dest_networksize))
+                #slog.warn('recv_nodes_num:{0} beyond dest_networksize:{1}'.format(recv_nodes_num, dest_networksize))
                 drop_rate = 0.0
-            print('send_timestamp:{0} begin:{1} time_index:{2} recv_nodes_num:{3} dest_networksize:{4} drop_rate:{5}'.format(send_timestamp, begin, time_index, recv_nodes_num, dest_networksize, drop_rate))
+            #print('send_timestamp:{0} begin:{1} time_index:{2} recv_nodes_num:{3} dest_networksize:{4} drop_rate:{5}'.format(send_timestamp, begin, time_index, recv_nodes_num, dest_networksize, drop_rate))
 
             if time_index > (len(time_list) - 1):
                 slog.warn('time_index:{0} beyond time_list length:{1}'.format(time_index, len(time_list)))
@@ -302,7 +305,7 @@ class Dash(object):
                 continue
             sum_drop_rate = 0.0
             for item in v:
-                slog.debug('drop_rate: {0}'.format(item))
+                #slog.debug('drop_rate: {0}'.format(item))
                 sum_drop_rate += item
             slog.debug('sum_drop_rate:{0} size:{1}'.format(sum_drop_rate, len(v)))
             avg_drop_rate = sum_drop_rate / len(v)
@@ -318,6 +321,14 @@ class Dash(object):
             self.packet_drop_rate_sql.insert_to_db(tmp_drop_db_item)
 
 
+        '''
+        results.sort(key=get_list_first)
+        #print(results)
+        if results:
+            results[0][1] = 1.1
+            results[-1][1] = 1.1
+        '''
         return results
+
 
 
