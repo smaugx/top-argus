@@ -27,7 +27,6 @@ app = Flask(__name__)
 alarm_entity = core.Alarm()
 
 gconfig = {
-        'watch_filename': './xtop.log',
         'global_sample_rate': 100,  # sample_rate%
         'alarm_pack_num': 1,   # upload alarm size one time
         'grep_broadcast': {

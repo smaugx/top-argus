@@ -20,6 +20,7 @@ import json
 import threading
 import random
 import operator
+import argparse
 from common.slogging import slog
 from urllib.parse import urljoin
 
@@ -30,7 +31,6 @@ from urllib.parse import urljoin
 SENDQ = queue.Queue(10000)
 RECVQ = queue.Queue(10000)
 gconfig = {
-        'watch_filename': './xtop.log',
         'global_sample_rate': 100,  # sample_rate%
         'alarm_pack_num': 1,   # upload alarm size one time
         'grep_broadcast': {
@@ -619,28 +619,35 @@ def consumer_recv_test():
 
     
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        slog.error('param invalid,usage: ./logwatch.py 127.0.0.1:9090 ./xtop.log')
+    parser = argparse.ArgumentParser()
+    parser.description='TOP-Argus Agent，拉取远程配置，报警采集并上报'
+    parser.add_argument('-a', '--alarm', help='alarm proxy host, agent pull config and push alarm to this proxy host, eg: 127.0.0.1:9090', default='127.0.0.1:9090')
+    parser.add_argument('-f', '--file', help="log file for agent to watch, eg: ./xtop.log", default='./xtop.log')
+    args = parser.parse_args()
+
+    if args.alarm.find(':') == -1:
+        slog.error('alarm proxy host invalid')
         sys.exit()
 
-    alarm_proxy_host = sys.argv[
+    alarm_proxy_host = args.alarm
+    alarm_filename = args.file
+    start_print = 'agent start... host:{0} file:{1}\n'.format(alarm_proxy_host, alarm_filename)
+    slog.info(start_print)
+    print(start_print)
+
+    if update_config_from_remote():
+        slog.warn('using remote config to start: {0}'.format(json.dumps(gconfig)))
+    else:
+        slog.error('using local config to start: {0}'.format(json.dumps(gconfig)))
 
 
-    if not update_config_from_remote():
-        slog.error('using default config to start: {0}'.format(json.dumps(gconfig)))
-
-    filename = './xtop.log'
-    filename = gconfig.get('watch_filename')
-    if len(sys.argv) == 2:
-        filename = sys.argv[1]
-
-    #run_watch(filename)
+    #run_watch(alarm_filename)
 
     update_config_th = threading.Thread(target = update_config)
     update_config_th.start()
     slog.info('start update config from remote thread')
 
-    watchlog_th = threading.Thread(target = run_watch, args = (filename, ))
+    watchlog_th = threading.Thread(target = run_watch, args = (alarm_filename, ))
     watchlog_th.start()
     slog.info("start watchlog thread")
 
