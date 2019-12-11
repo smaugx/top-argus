@@ -164,7 +164,9 @@ function getQueryString(name) {
                                     }
                                     new_item['hop_num'] = item['hop_num'];
                                     new_item['taking'] = item['taking'];
-                                    new_item['timestamp'] = item['timestamp'].substring(4,29);
+                                    // using GMT+0800
+                                    var tmp_cst_date = new Date(item['timestamp']);
+                                    new_item['timestamp'] = tmp_cst_date.toString().substring(4,24);
                                     final_data.push(new_item);
                                 }
                                    returnData.data = final_data;

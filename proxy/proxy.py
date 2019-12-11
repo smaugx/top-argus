@@ -45,7 +45,7 @@ gconfig = {
             },
         'grep_networksize': {
             'start': 'true',
-            'sample_rate': 100,
+            'sample_rate': 10,
             'alarm_type': 'networksize',
             'network_focus_on': ['660000', '680000', '690000'], # src or dest
             'network_ignore':   ['670000'],  # src or dest
@@ -117,6 +117,7 @@ def config_update():
             slog.info('udpate config finished, config is: {0}'.format(json.dumps(gconfig, indent = 4)))
             ret['status'] = 0
             ret['error'] = status_ret.get(0)
+            ret['config'] = config
             return jsonify(ret)
 
     ret['status'] = -3
@@ -168,8 +169,8 @@ def run():
     dumpdb_th = threading.Thread(target = alarm_entity.dump_db)
     dumpdb_th.start()
 
-    #app.run(host="0.0.0.0", port= 9090, debug=True)
-    app.run()
+    app.run(host="0.0.0.0", port= 9090, debug=True)
+    #app.run()
     alarm_th.join()
 
 

@@ -37,7 +37,7 @@ gconfig = {
             },
         'grep_networksize': {
             'start': 'true',
-            'sample_rate': 100,
+            'sample_rate': 20,
             'alarm_type': 'networksize',
             'network_focus_on': ['660000', '680000', '690000'], # src or dest
             'network_ignore':   ['670000'],  # src or dest
@@ -58,7 +58,8 @@ def update_config():
     payload = {
             'config': gconfig,
             'auth': 'smaugadmin',
-            'test': 'true',
+            #'test': 'true',
+            'test': 'false',
             }
     try:
         res = requests.put(url, headers = my_headers, data = json.dumps(payload), timeout = 5)
