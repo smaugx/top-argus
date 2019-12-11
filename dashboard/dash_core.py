@@ -321,8 +321,8 @@ class Dash(object):
             self.packet_drop_rate_sql.insert_to_db(tmp_drop_db_item)
 
 
-        '''
         results.sort(key=get_list_first)
+        '''
         #print(results)
         if results:
             results[0][1] = 1.1
