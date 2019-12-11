@@ -284,8 +284,8 @@ def packet_drop_query():
 
 
 def run():
-    app.run(host="0.0.0.0", port= 8080, debug=True)
-    #app.run()
+    #app.run(host="0.0.0.0", port= 8080, debug=True)
+    app.run()
 
 if __name__ == '__main__':
     run()
