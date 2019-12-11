@@ -66,4 +66,13 @@ CREATE TABLE IF NOT EXISTS packet_drop_info_table(
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;
 
-
+/* 用户管理*/
+DROP TABLE IF EXISTS user_info_table;
+CREATE TABLE IF NOT EXISTS user_info_table(
+                username VARCHAR(20) NOT NULL,
+                password_hash VARCHAR(100) NOT NULL,
+                email  VARCHAR(20) DEFAULT "",
+                PRIMARY KEY (username)
+)
+        ENGINE =InnoDB
+        DEFAULT CHARSET =utf8;

@@ -12,6 +12,8 @@ sys.path.insert(0, base_dir)
 
 
 from flask import Flask ,request, url_for, render_template,jsonify
+from flask_httpauth import HTTPBasicAuth
+from werkzeug.security import generate_password_hash, check_password_hash
 import sys
 import json
 import requests
@@ -23,24 +25,54 @@ import base64
 import copy
 import threading
 import dash_core
+import dash_user
+from common.slogging import slog
 
 app = Flask(__name__)
+auth = HTTPBasicAuth()
+
+user_info = {
+    'smaug1': generate_password_hash('hello1'),
+    'smaug2': generate_password_hash('hello2')
+    }
 
 mydash = dash_core.Dash()
+myuser = dash_user.User()
+
+@auth.verify_password
+def verify_password(username, password):
+    global user_info
+    print('username:{0}'.format(username))
+    if username not in user_info:
+        tmp_user_info = myuser.get_user_info()
+        if tmp_user_info:
+            slog.info('update user_info from db:{0}'.format(json.dumps(tmp_user_info)))
+            for item in tmp_user_info:
+                if item.get('username') not in user_info:
+                    user_info[item.get('username')] = item.get('password_hash')
+        else:
+            slog.info('update user_info from db failed')
+
+    if username not in user_info:
+        return False
+    return check_password_hash(user_info.get(username), password)
 
 
 @app.route('/')
+@auth.login_required
 def hello_world():
-    return 'Hello, World!'
+    return '{0} Hello, World!'.format(username)  
 
 @app.route('/index', methods=['GET'])
 @app.route('/index/', methods=['GET'])
+@auth.login_required
 def index():
     return 'Hello, World!'
 
 # GET /api/web/packet/?chain_hash=8180269&chain_msgid=393217&is_root=0&broadcast=1&send_node_id=010000&src_node_id=660000&dest_node_id=680000
 @app.route('/api/web/packet/', methods = ['GET'])
 @app.route('/api/web/packet', methods = ['GET'])
+@auth.login_required
 def packet_query():
     chain_hash   = request.args.get('chain_hash')       or None
     chain_msgid  = request.args.get('chain_msgid')      or None
@@ -94,6 +126,7 @@ def packet_query():
 # GET /api/web/packet_recv/?chain_hash=8180269&recv_node_id=01000&recv_node_ip=127.0.0.1
 @app.route('/api/web/packet_recv/', methods = ['GET'])
 @app.route('/api/web/packet_recv', methods = ['GET'])
+@auth.login_required
 def packet_recv_query():
     chain_hash   = request.args.get('chain_hash')       or None
     recv_node_id = request.args.get('recv_node_id')     or None
@@ -128,6 +161,7 @@ def packet_recv_query():
 # GET /api/web/network/?node_ip=127.0.0.1&onlysize=true/false
 @app.route('/api/web/network/', methods = ['GET'])
 @app.route('/api/web/network', methods = ['GET'])
+@auth.login_required
 def network_query():
     network_id = request.args.get('network_id')       or '010000'
     node_id    = request.args.get('node_id')          or None
@@ -171,6 +205,7 @@ def network_query():
 # GET /api/web/networkid/?virtual=true/false
 @app.route('/api/web/networkid/', methods = ['GET'])
 @app.route('/api/web/networkid', methods = ['GET'])
+@auth.login_required
 def networkid_query():
     virtual = request.args.get('virtual')         or None
     if virtual == 'false':
@@ -195,6 +230,7 @@ def networkid_query():
 # GET /api/web/packet_drop/?dest_node_id=680000&begin=1508954899&end=15089584959
 @app.route('/api/web/packet_drop/', methods = ['GET'])
 @app.route('/api/web/packet_drop', methods = ['GET'])
+@auth.login_required
 def packet_drop_query():
     now = int(time.time() * 1000)
     latest_hour = now - 60 * 60 * 1000
@@ -248,8 +284,8 @@ def packet_drop_query():
 
 
 def run():
-    #app.run(host="0.0.0.0", port= 8080, debug=True)
-    app.run()
+    app.run(host="0.0.0.0", port= 8080, debug=True)
+    #app.run()
 
 if __name__ == '__main__':
     run()

@@ -16,7 +16,7 @@ http{
 
         #nginx的HttpLog模块指定，指定nginx日志的输出格式，输出格式为access
         log_format access '$remote_addr - $remote_user [$time_local] "$request" '
-                '$status $body_bytes_sent "$http_referer" '
+                '$status $body_bytes_sent '
                 '"$http_user_agent" "$http_x_forwarded_for"';
         #access日志存在未知
         access_log  /var/log/nginx/access.log   access;
