@@ -5,6 +5,7 @@ chardet==3.0.4
 Click==7.0
 configparser==3.8.1
 Flask==1.1.1
+Flask-HTTPAuth==3.3.0
 futures==2.2.0
 gevent==1.4.0
 greenlet==0.4.15
