@@ -61,7 +61,7 @@ def verify_password(username, password):
 @app.route('/')
 @auth.login_required
 def hello_world():
-    return '{0} Hello, World!'.format(username)  
+    return '{0} Hello, World!'.format(auth.username())
 
 @app.route('/index', methods=['GET'])
 @app.route('/index/', methods=['GET'])
