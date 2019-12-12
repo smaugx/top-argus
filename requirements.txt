@@ -15,7 +15,6 @@ instagram-scraper==1.7.1
 ipinfo==3.0.0
 itsdangerous==1.1.0
 Jinja2==2.10.3
-jq==0.1.6
 MarkupSafe==1.1.1
 pathtools==0.1.2
 powerline-status==2.7
