@@ -26,7 +26,7 @@ import my_queue
 
 app = Flask(__name__)
 mq = my_queue.CacheQueue()
-consumer = core.AlarmConsumer()
+consumer = core.AlarmConsumer(q=mq)
 
 gconfig = {
         'global_sample_rate': 100,  # sample_rate%
