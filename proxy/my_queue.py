@@ -68,7 +68,9 @@ class RedisQueue(object):
         return
 
     def get_queue(self):
-        item = myredis.brpop(self.queue_key, timeout=0) # will block here if no data get
-        return item
+        item = self.myredis.brpop(self.queue_key, timeout=0) # will block here if no data get, return item is tuple
+        if not item:
+            return ''
+        return item[1]
     
 
