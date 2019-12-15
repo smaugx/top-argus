@@ -25,7 +25,8 @@ from common.slogging import slog
 import my_queue
 
 app = Flask(__name__)
-mq = my_queue.CacheQueue()
+#mq = my_queue.CacheQueue()
+mq = my_queue.RedisQueue(host='127.0.0.1', port=6379, password='')
 consumer = core.AlarmConsumer(q=mq)
 
 gconfig = {

@@ -42,7 +42,7 @@ class CacheQueue(object):
 
 class RedisQueue(object):
     def __init__(self, host, port, password):
-        self.mypool  = redis.ConnectionPool(host= '127.0.0.1', port= 6379, password = 'smaugredis')
+        self.mypool  = redis.ConnectionPool(host = host, port = port, password = password)
         self.myredis = redis.StrictRedis(connection_pool = self.mypool)
         self.queue_key = 'topargus_alarm_list'
         return
