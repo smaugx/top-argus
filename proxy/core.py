@@ -72,16 +72,20 @@ class AlarmConsumer(object):
     def consume_alarm(self):
         while True:
             slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize()))
-            alarm_payload = self.alarm_queue_.get_queue()
-            alarm_type = alarm_payload.get('alarm_type')
-            if alarm_type == 'packet':
-                self.packet_alarm(alarm_payload.get('alarm_content'))
-            elif alarm_type == 'networksize':
-                self.networksize_alarm(alarm_payload.get('alarm_content'))
-            elif alarm_type == 'progress':
-                self.progress_alarm(alarm_payload.get('alarm_content'))
-            else:
-                slog.warn('invalid alarm_type:{0}'.format(alarm_type))
+            try:
+                alarm_payload = self.alarm_queue_.get_queue()
+                alarm_payload = json.loads(alarm_payload)
+                alarm_type = alarm_payload.get('alarm_type')
+                if alarm_type == 'packet':
+                    self.packet_alarm(alarm_payload.get('alarm_content'))
+                elif alarm_type == 'networksize':
+                    self.networksize_alarm(alarm_payload.get('alarm_content'))
+                elif alarm_type == 'progress':
+                    self.progress_alarm(alarm_payload.get('alarm_content'))
+                else:
+                    slog.warn('invalid alarm_type:{0}'.format(alarm_type))
+            except Exception as e:
+                slog.warn('catch exception:{0}'.format(e))
         return
 
     # focus on packet_info(drop_rate,hop_num,timing)
