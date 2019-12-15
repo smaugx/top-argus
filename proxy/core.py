@@ -9,14 +9,15 @@ import copy
 import threading
 from database.packet_sql import PacketInfoSql, PacketRecvInfoSql,NetworkInfoSql
 from common.slogging import slog
+import my_queue
 
 
 #{"local_node_id": "010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3", "chain_hash": "4165143189", "chain_msgid": "655361", "chain_msg_size": "9184", "send_timestamp": "1573547749649", "src_node_id": "690000010140ff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716", "dest_node_id": "690000010140ff7fffffffffffffffff000000009aee88245d7e31e7abaab1ac9956d5a0", "is_root": "0", "broadcast": "0"}
 
 #{"local_node_id": "010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3", "chain_hash": "1146587997", "chain_msgid": "917505", "packet_size": "602", "chain_msg_size": "189", "hop_num": "1", "recv_timestamp": "1573547749394", "src_node_id": "010000ffffffffffffffffffffffffff0000000088ae064b2bb22948a2aee8ecd81c08f9", "dest_node_id": "67000000ff7fff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716", "is_root": "0", "broadcast": "0"}
 
-class Alarm(object):
-    def __init__(self):
+class AlarmConsumer(object):
+    def __init__(self, q):
         # lock of packet_info_cache_ and packet_info_chain_hash_
         self.packet_info_lock_ = threading.Lock()
         # key is chain_hash, value is packet_info
@@ -30,7 +31,7 @@ class Alarm(object):
         self.network_ids_ = {}
         
         # store packet_info from /api/alarm
-        self.alarm_queue_ = queue.Queue(100000) 
+        self.alarm_queue_ = q 
 
         # init db obj
         self.packet_info_sql = PacketInfoSql()
@@ -67,46 +68,20 @@ class Alarm(object):
                 '2.0_':0
                 },
             }
-        
-    def put_queue(self, item):
-        try:
-            self.alarm_queue_.put(item, block=True, timeout = 2)
-        except Exception as e:
-            slog.info("put queue exception:{0}".format(e))
-            return False
-        return True
-
-    # handle alarm 
-    def handle_alarm(self, alarm_list, alarm_ip):
-        if not alarm_list:
-            return
-    
-        for item in alarm_list:
-            if item.get('alarm_type') == 'packet':
-                item['alarm_content']['public_ip'] = alarm_ip
-
-            self.put_queue(item)
-        slog.info("put {0} alarm in queue, now size is {1}".format(len(alarm_list), self.alarm_queue_.qsize()))
-        return
     
     def consume_alarm(self):
         while True:
-            time.sleep(3)
-            try:
-                slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize()))
-                while self.alarm_queue_.qsize() > 0:
-                    alarm_payload = self.alarm_queue_.get()
-                    alarm_type = alarm_payload.get('alarm_type')
-                    if alarm_type == 'packet':
-                        self.packet_alarm(alarm_payload.get('alarm_content'))
-                    elif alarm_type == 'networksize':
-                        self.networksize_alarm(alarm_payload.get('alarm_content'))
-                    elif alarm_type == 'progress':
-                        self.progress_alarm(alarm_payload.get('alarm_content'))
-                    else:
-                        slog.warn('invalid alarm_type:{0}'.format(alarm_type))
-            except Exception as e:
-                slog.info('consumer catch exception: {0}'.format(e))
+            slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize()))
+            alarm_payload = self.alarm_queue_.get_queue()
+            alarm_type = alarm_payload.get('alarm_type')
+            if alarm_type == 'packet':
+                self.packet_alarm(alarm_payload.get('alarm_content'))
+            elif alarm_type == 'networksize':
+                self.networksize_alarm(alarm_payload.get('alarm_content'))
+            elif alarm_type == 'progress':
+                self.progress_alarm(alarm_payload.get('alarm_content'))
+            else:
+                slog.warn('invalid alarm_type:{0}'.format(alarm_type))
         return
 
     # focus on packet_info(drop_rate,hop_num,timing)
@@ -132,7 +107,7 @@ class Alarm(object):
                             'alarm_type': 'packet',
                             'alarm_content': packet_info,
                             }
-                    self.alarm_queue_.put(tmp_alarm_payload, block=True, timeout=2)
+                    self.alarm_queue_.put_queue(tmp_alarm_payload)
                     if self.alarm_queue_.qsize() < 500:  # avoid more cpu
                         slog.info('hold packet_info: {0}, queue size: {1}'.format(json.dumps(packet_info), self.alarm_queue_.qsize() ))
                         time.sleep(0.1)

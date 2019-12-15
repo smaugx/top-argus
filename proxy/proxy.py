@@ -22,19 +22,21 @@ import copy
 import core
 import threading
 from common.slogging import slog
+import my_queue
 
 app = Flask(__name__)
-alarm_entity = core.Alarm()
+mq = my_queue.CacheQueue()
+consumer = core.AlarmConsumer()
 
 gconfig = {
         'global_sample_rate': 100,  # sample_rate%
-        'alarm_pack_num': 1,   # upload alarm size one time
+        'alarm_pack_num': 2,   # upload alarm size one time
         'grep_broadcast': {
             'start': 'true',
             'sample_rate': 100,
             'alarm_type': 'packet',
-            'network_focus_on': ['660000', '680000', '690000'], # src or dest
-            'network_ignore':   ['670000'],  # src or dest
+            'network_focus_on': ['660000', '680000', '690000', '670000'], # src or dest
+            'network_ignore':   ['650000'],  # src or dest
             },
         'grep_point2point': {
             'start': 'false',
@@ -45,7 +47,7 @@ gconfig = {
             },
         'grep_networksize': {
             'start': 'true',
-            'sample_rate': 10,
+            'sample_rate': 20,
             'alarm_type': 'networksize',
             'network_focus_on': ['660000', '680000', '690000'], # src or dest
             'network_ignore':   ['670000'],  # src or dest
@@ -78,9 +80,9 @@ def config_update():
             }
     ret = {}
     if request.method == 'GET':
-        alarm_ip = request.remote_addr
+        alarm_ip = request.remote_addr or request.X-Real-IP
         slog.info("update config ip:{0}".format(alarm_ip))
-        ret = {'status': 0, 'error': status_ret.get(0), 'config': gconfig}
+        ret = {'status': 0, 'error': status_ret.get(0), 'config': gconfig, 'ip': alarm_ip}
         return jsonify(ret)
 
     if request.method == 'PUT':
@@ -130,7 +132,7 @@ def config_update():
 @app.route('/api/alarm/', methods=['POST'])
 @app.route('/api/alarm', methods=['POST'])
 def alarm_report():
-    payload = []
+    payload =  {}
     if not request.is_json:
         payload = json.loads(request.data)
     else:
@@ -142,39 +144,30 @@ def alarm_report():
             -1:'上报字段不合法,部分可能上传失败',
             -2:'格式转化出错，请检查字段数或者字段格式等'
             }
-    if len(payload) <= 0:
+    if not payload.get('data'):
         ret = {'status': -2, 'error': status_ret.get(-2)}
         return jsonify(ret)
 
-    first_item = payload[0]
-    if not first_item.get('alarm_content'):   #TODO(smaug)
-        ret = {'status': -1, 'error': status_ret.get(-1)}
-        return jsonify(ret)
-
     alarm_ip = request.remote_addr
-    #slog.info("recv ip:{0} {1} alarm:{2}".format(alarm_ip, len(payload), json.dumps(payload[0])))
-    slog.info("recv ip:{0} {1} alarm:{2}".format(alarm_ip, len(payload), json.dumps(payload)))
-    alarm_entity.handle_alarm(payload, alarm_ip)
+    slog.info("recv alarm from ip:{0} size:{1}".format(alarm_ip, len(payload.get('data'))))
+    mq.handle_alarm(payload.get('data'))
     ret = {'status': 0, 'error': status_ret.get(0)}
     return jsonify(ret)
 
 
 def run():
-    global alarm_th
     # thread handle alarm and merge packet_info
-    alarm_th = threading.Thread(target = alarm_entity.consume_alarm)
-    alarm_th.start()
+
+    consumer_th = threading.Thread(target = consumer.consume_alarm)
+    consumer_th.start()
 
     # thread dump to db
-    dumpdb_th = threading.Thread(target = alarm_entity.dump_db)
+    dumpdb_th = threading.Thread(target = consumer.dump_db)
     dumpdb_th.start()
 
     app.run(host="0.0.0.0", port= 9090, debug=True)
     #app.run()
     alarm_th.join()
-
-
-
 
 
 if __name__ == '__main__':
