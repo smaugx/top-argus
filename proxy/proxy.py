@@ -159,16 +159,22 @@ def alarm_report():
 def run():
     # thread handle alarm and merge packet_info
 
+    slog.info('proxy start...')
+
+    '''
     consumer_th = threading.Thread(target = consumer.consume_alarm)
     consumer_th.start()
 
     # thread dump to db
     dumpdb_th = threading.Thread(target = consumer.dump_db)
     dumpdb_th.start()
+    '''
 
     app.run(host="0.0.0.0", port= 9090, debug=True)
     #app.run()
-    consumer_th.join()
+
+    #consumer_th.join()
+    #dumpdb_th.join()
 
 
 if __name__ == '__main__':
