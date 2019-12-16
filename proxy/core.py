@@ -327,7 +327,7 @@ class AlarmConsumer(object):
                 with open(self.network_ids_shm_file_, 'w') as fout:
                     fout.write(json.dumps(self.network_ids_))
                     fout.close()
-                    slog.debug('dump network_info:{0} to shm:{1}'.format(json.dumps(self.network_ids_), self.network_ids_shm_file_))
+                    slog.debug('dump network_info to shm:{0}'.format(self.network_ids_shm_file_))
 
             time.sleep(20)
         return
@@ -343,7 +343,7 @@ class AlarmConsumer(object):
                 with open(self.network_ids_shm_file_, 'r') as fin:
                     self.network_ids_ = json.loads(fin.read())
                     fin.close()
-                    slog.debug('load network_info:{0} from shm:{1}'.format(json.dumps(self.network_ids_), self.network_ids_shm_file_))
+                    slog.debug('load network_info from shm:{0}'.format(self.network_ids_shm_file_))
 
             time.sleep(20)
         return
