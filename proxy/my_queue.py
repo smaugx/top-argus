@@ -105,6 +105,11 @@ class RedisQueue(object):
         if qkey == None:
             return
         # item is dict, serialize to str
+        # TODO(smaug)
+        size = self.qsize(qkey)
+        if size >= 500000:
+            slog.debug("queue_key:{0} size {1} beyond 500000".format(qkey, size))
+            return
         self.myredis.lpush(qkey, json.dumps(item))
         slog.debug("put_queue type:{0} in queue {1}, now size is {2}".format(item.get('alarm_type'), qkey, self.qsize(qkey)))
         return

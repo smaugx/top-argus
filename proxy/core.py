@@ -20,6 +20,7 @@ import my_queue
 class AlarmConsumer(object):
     def __init__(self, q, queue_key):
         slog.info("alarmconsumer init. pid:{0} paraent:{1} queue_key:{2}".format(os.getpid(), os.getppid(), queue_key))
+        self.expire_time_  = 10  # 10min
 
         self.packet_info_lock_ = threading.Lock()
         self.packet_info_cache_ = {}
@@ -131,7 +132,7 @@ class AlarmConsumer(object):
                 ptime = packet_info.get('send_timestamp')
             ptime = int(ptime)
             now = int(time.time() * 1000)
-            if (ptime + 5 * 60  *1000) < now:
+            if (ptime + self.expire_time_ * 60  *1000) < now:
                 slog.info('alarm queue expired: {0}'.format(json.dumps(packet_info)))
                 return False
             chain_hash = int(packet_info.get('chain_hash'))
@@ -369,7 +370,7 @@ class AlarmConsumer(object):
                         tmp_remove_chain_hash_list.append(chain_hash)
                         continue
 
-                    if (now - send_timestamp) < 2 * 60 * 1000:
+                    if (now - send_timestamp) < 5 * 60 * 1000:
                         # keep latest 5 min
                         slog.info("not expired,keep in list, chain_hash: {0} cache size: {1}".format(chain_hash, len(self.packet_info_chain_hash_)))
                         continue
