@@ -13,19 +13,16 @@ sys.path.insert(0, base_dir)
 import core
 from common.slogging import slog
 import my_queue
-import shared_cache
 from multiprocessing import Process
 
 mq = my_queue.RedisQueue(host='127.0.0.1', port=6379, password='')
-scache = shared_cache.SharedCache()
-
 
 def run():
     global mq, scache
     all_queue_key = mq.get_all_queue_keys()  # set of queue_key
     consumer_list = []
     for item in all_queue_key:
-        consumer = core.AlarmConsumer(q=mq, queue_key = item, sharedcache = scache)
+        consumer = core.AlarmConsumer(q=mq, queue_key = item)
         consumer_list.append(consumer)
 
     process_list = []

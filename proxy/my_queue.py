@@ -47,26 +47,42 @@ class RedisQueue(object):
         self.myredis = redis.StrictRedis(connection_pool = self.mypool)
         self.all_queue_keys = 'topargus_alarm_allkey_set'
         self.queue_key_base = 'topargus_alarm_list'
-        self.queue_key_num = 4
 
-        for i in range(0,self.queue_key_num):
-            qkey = '{0}:{1}'.format(self.queue_key_base, i)
-            self.myredis.sadd(self.all_queue_keys, qkey)
+        self.queue_key_map = {
+                'packet': ['topargus_alarm_list:packet:0', 'topargus_alarm_list:packet:1'],
+                'networksize': ['topargus_alarm_list:networksize:0'],
+                'progress': ['topargus_alarm_list:networksize:0'],
+                #'other':['topargus_alarm_list:other']
+                }
+
+        for k,v in self.queue_key_map.items():
+            for qkey in v:
+                self.myredis.sadd(self.all_queue_keys, qkey)
         return
     
     def get_all_queue_keys(self):
-        queue_key_list = []
-        for i in range(0,self.queue_key_num):
-            qkey = '{0}:{1}'.format(self.queue_key_base, i)
-            queue_key_list.append(qkey)
-        return queue_key_list
+        queue_key_list = set()
+        for k,v in self.queue_key_map.items():
+            for qkey in v:
+                queue_key_list.add(qkey)
+        return list(queue_key_list)
 
-    def get_queue_key_with_hash(self, msg_hash = None):
+    def get_queue_key_of_alarm(self, alarm_type, msg_hash = None):
         # eg: topargus_alarm_list:0 ; topargus_alarm_list:1;topargus_alarm_list:2;topargus_alarm_list:3
-        qkey = '{0}:{1}'.format(self.queue_key_base, random.randint(0,10000) % self.queue_key_num)
+        qkey = None
+        qkey_list = self.queue_key_map.get(alarm_type)
+        if not qkey_list:
+            return None
+
+        if len(qkey_list) == 1:
+            qkey = qkey_list[0]
+            return qkey
+
         if msg_hash != None:
             msg_hash = int(msg_hash)
-            qkey = '{0}:{1}'.format(self.queue_key_base, msg_hash % self.queue_key_num)
+            qkey = qkey_list[msg_hash % len(qkey_list)]
+        else:
+            qkey = qkey_list[random.randint(0,10000) % len(qkey_list)]
         return qkey 
 
     def qsize(self, queue_key):
@@ -85,7 +101,9 @@ class RedisQueue(object):
         if not isinstance(item, dict):
             return
         # TODO(smaug) for packet using chain_hash; other type using other hash
-        qkey = self.get_queue_key_with_hash(item.get('alarm_content').get('chain_hash'))
+        qkey = self.get_queue_key_of_alarm(item.get('alarm_type'), item.get('alarm_content').get('chain_hash'))
+        if qkey == None:
+            return
         # item is dict, serialize to str
         self.myredis.lpush(qkey, json.dumps(item))
         slog.debug("put_queue type:{0} in queue {1}, now size is {2}".format(item.get('alarm_type'), qkey, self.qsize(qkey)))

@@ -24,25 +24,25 @@ mq = my_queue.RedisQueue(host='127.0.0.1', port=6379, password='')
 gconfig_shm_file = '/dev/shm/topargus_gconfig'
 
 gconfig = {
-        'global_sample_rate': 100,  # sample_rate%
+        'global_sample_rate': 10,  # sample_rate%
         'alarm_pack_num': 2,   # upload alarm size one time
         'grep_broadcast': {
             'start': 'true',
-            'sample_rate': 100,
+            'sample_rate': 10,
             'alarm_type': 'packet',
             'network_focus_on': ['660000', '680000', '690000', '670000'], # src or dest
             'network_ignore':   ['650000'],  # src or dest
             },
         'grep_point2point': {
             'start': 'false',
-            'sample_rate': 100,
+            'sample_rate': 10,
             'alarm_type': 'packet',
             'network_focus_on': ['660000', '680000', '690000'], # src or dest
             'network_ignore':   ['670000'],  # src or dest
             },
         'grep_networksize': {
             'start': 'true',
-            'sample_rate': 20,
+            'sample_rate': 5,
             'alarm_type': 'networksize',
             'network_focus_on': ['660000', '680000', '690000'], # src or dest
             'network_ignore':   ['670000'],  # src or dest
