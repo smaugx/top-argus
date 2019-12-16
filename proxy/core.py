@@ -337,6 +337,8 @@ class AlarmConsumer(object):
         while True:
             with self.network_ids_lock_:
                 slog.info("load network_id from shm")
+                if not os.path.exists(self.network_ids_shm_file_):
+                    continue
                 with open(self.network_ids_shm_file_, 'r') as fin:
                     self.network_ids_ = json.loads(fin.read())
                     fin.close()
