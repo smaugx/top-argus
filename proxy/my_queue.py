@@ -63,7 +63,8 @@ class RedisQueue(object):
     def get_queue_key_with_hash(self, msg_hash = None):
         # eg: topargus_alarm_list:0 ; topargus_alarm_list:1;topargus_alarm_list:2;topargus_alarm_list:3
         qkey = '{0}:{1}'.format(self.queue_key_base, random.randint(0,10000) % self.queue_key_num)
-        if msg_hash != None and msg_hash != 0:
+        if msg_hash != None:
+            msg_hash = int(msg_hash)
             qkey = '{0}:{1}'.format(self.queue_key_base, msg_hash % self.queue_key_num)
         return qkey 
 
@@ -86,7 +87,7 @@ class RedisQueue(object):
         qkey = self.get_queue_key_with_hash(item.get('chain_hash'))
         # item is dict, serialize to str
         self.myredis.lpush(qkey, json.dumps(item))
-        slog.debug("put type:{0} alarm in queue, now size is {1}".format(item.get('alarm_type'), self.qsize(qkey)))
+        slog.debug("put_queue type:{0} in queue {1}, now size is {2}".format(item.get('alarm_type'), qkey, self.qsize(qkey)))
         return
 
     def get_queue(self, queue_key):
@@ -94,6 +95,7 @@ class RedisQueue(object):
         item = self.myredis.brpop(queue_key, timeout=0) # will block here if no data get, return item is tuple
         if not item:
             return None
+        slog.debug('get_queue from {0} item:{1}'.format(queue_key, item))
         return json.loads(item[1])
     
 
