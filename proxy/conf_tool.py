@@ -97,12 +97,14 @@ def get_config():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.description='TOP-Argus config tool，更新配置文件到配置中心，查看配置中心的配置文件'
-    parser.add_argument('-u', '--update', help='update config server', default = False)
-    parser.add_argument('-g', '--get',    help='get config from server', default = False)
+    parser.add_argument('-u', '--update', help='update config server', default = 'false')
+    parser.add_argument('-g', '--get',    help='get config from server', default = 'false')
     args = parser.parse_args()
 
-    if args.update == True:
+    if args.update == 'true':
         update_config()
 
-    if args.get == True:
+    if args.get == 'true':
         get_config()
+
+    print('done')
