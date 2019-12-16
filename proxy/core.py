@@ -3,6 +3,7 @@
 
 
 import json
+import os
 import time
 import queue
 import copy
@@ -17,21 +18,19 @@ import my_queue
 #{"local_node_id": "010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3", "chain_hash": "1146587997", "chain_msgid": "917505", "packet_size": "602", "chain_msg_size": "189", "hop_num": "1", "recv_timestamp": "1573547749394", "src_node_id": "010000ffffffffffffffffffffffffff0000000088ae064b2bb22948a2aee8ecd81c08f9", "dest_node_id": "67000000ff7fff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716", "is_root": "0", "broadcast": "0"}
 
 class AlarmConsumer(object):
-    def __init__(self, q):
-        # lock of packet_info_cache_ and packet_info_chain_hash_
+    def __init__(self, q, queue_key, sharedcache):
+        slog.info("alarmconsumer init. pid:{0} paraent:{1} queue_key:{2}".format(os.getpid(), os.getppid(), queue_key))
+
         self.packet_info_lock_ = threading.Lock()
-        # key is chain_hash, value is packet_info
         self.packet_info_cache_ = {}
         # keep the order of insert
         self.packet_info_chain_hash_ = []
 
-        # keep all the node_id of some network_id, key is network_id, value is nodes of this network_id
-        self.network_ids_lock_ = threading.Lock()
-        # something like {'690000010140ff7f': {'node_info': [{'node_id': xxxx, 'node_ip':127.0.0.1:9000}], 'size':1}}
-        self.network_ids_ = {}
-        
         # store packet_info from /api/alarm
         self.alarm_queue_ = q 
+        self.queue_key_ = queue_key # eg: topargus_alarm_list:0
+        
+        self.shared_cache_ = sharedcache   # manager module
 
         # init db obj
         self.packet_info_sql = PacketInfoSql()
@@ -68,18 +67,33 @@ class AlarmConsumer(object):
                 '2.0_':0
                 },
             }
+
+        return
+
+    def run(self):
+        consumer_th = threading.Thread(target = self.consume_alarm)
+        consumer_th.start()
+
+        dumpdb_th = threading.Thread(target = self.dump_db)
+        dumpdb_th.start()
+
+        slog.info("alarmconsumer run. pid:{0} paraent:{1}".format(os.getpid(), os.getppid()))
+
+        consumer_th.join()
+        dumpdb_th.join()
+        return
+
     
     def consume_alarm(self):
         while True:
             slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize()))
             try:
-                alarm_payload = self.alarm_queue_.get_queue()
-                alarm_payload = json.loads(alarm_payload)
+                alarm_payload = self.alarm_queue_.get_queue(self.queue_key_)  # return dict or None
                 alarm_type = alarm_payload.get('alarm_type')
                 if alarm_type == 'packet':
                     self.packet_alarm(alarm_payload.get('alarm_content'))
                 elif alarm_type == 'networksize':
-                    self.networksize_alarm(alarm_payload.get('alarm_content'))
+                    self.shared_cache_.networksize_alarm(alarm_payload.get('alarm_content'))
                 elif alarm_type == 'progress':
                     self.progress_alarm(alarm_payload.get('alarm_content'))
                 else:
@@ -105,7 +119,7 @@ class AlarmConsumer(object):
                 if not self.packet_info_cache_.get(chain_hash):
                     # this is recv info,and befor send info, put it in end of queue again
                     if not packet_info.get('dest_networksize'):
-                        networksize = self.get_networksize(packet_info['dest_node_id'][:17])  # head 8 * 2 bytes
+                        networksize = self.shared_cache_.get_networksize(packet_info['dest_node_id'][:17])  # head 8 * 2 bytes
                         packet_info['dest_networksize'] = networksize
                     tmp_alarm_payload = {
                             'alarm_type': 'packet',
@@ -174,7 +188,7 @@ class AlarmConsumer(object):
 
                 # just for debug
                 time_diff = int(time.time() * 1000) - cache_packet_info['send_timestamp']
-                networksize = self.get_networksize(cache_packet_info['dest_node_id'][:17])  # head 8 * 2 bytes
+                networksize = self.shared_cache_.get_networksize(cache_packet_info['dest_node_id'][:17])  # head 8 * 2 bytes
                 cache_packet_info['dest_networksize'] = networksize
 
                 # insert to cache
@@ -182,87 +196,6 @@ class AlarmConsumer(object):
                 self.packet_info_cache_[chain_hash] = cache_packet_info
                 self.packet_info_chain_hash_.append(chain_hash)
         return True
-
-    def get_networksize(self, network_id):
-        with self.network_ids_lock_:
-            if network_id.startswith('010000'):
-                network_id = '010000'
-            if network_id not in self.network_ids_:
-                return 0
-            return self.network_ids_[network_id]['size']
-
-    def get_node_ip(self, node_id):
-        with self.network_ids_lock_:
-            network_id = node_id[:17]  # head 8 * 2 bytes
-            if network_id.startswith('010000'):
-                network_id = '010000'
-            if network_id not in self.network_ids_:
-                return ''
-            for ni in self.network_ids_[network_id]['node_info']:
-                if ni.get('node_id') == node_id:
-                    return ni.get('node_ip')
-        slog.warn('get no node_ip of node_id:{0}'.format(node_id))
-        return ''
-
-    def remove_dead_node(self, node_ip):
-        with self.network_ids_lock_:
-            network_ids_bak = copy.deepcopy(self.network_ids_)
-            for k,v in network_ids_bak.items():
-                for i in range(len(v.get('node_info'))):
-                    ni = v.get('node_info')[i]
-                    if ni.get('node_ip') == node_ip:
-                        del self.network_ids_[k]['node_info'][i]
-                        self.network_ids_[k]['size'] -= 1
-                        slog.warn('remove dead node_id:{0} node_ip:{1}'.format(ni.get('node_id'), ni.get('node_ip')))
-                if len(self.network_ids_[k]['node_info']) == 0:
-                    del self.network_ids_[k]
-            for k,v in self.network_ids_.items():
-                slog.info('network_ids key:{0} size:{1}'.format(k,v.get('size')))
-
-
-    def networksize_alarm(self, content):
-        if not content:
-            return False
-        with self.network_ids_lock_:
-            node_id = content.get('node_id')
-            network_id = node_id[:17]  # head 8 * 2 bytes
-
-            # attention: specially for kroot_id 010000
-            if network_id.startswith('010000'):
-                network_id = '010000'
-            node_id_status = content.get('node_id_status')
-            if node_id_status == 'remove':
-                if network_id not in self.network_ids_:
-                    slog.warn('remove node_id:{0} from nonexistent network_id:{1}'.format(node_id, network_id))
-                    return False
-                for ni in self.network_ids_[network_id]['node_info']:
-                    if ni.get('node_id') == node_id:
-                        self.network_ids_[network_id]['node_info'].remove(ni)
-                        self.network_ids_[network_id]['size'] -= 1
-                        slog.info('remove node_id:{0} from network_id:{1}, now size:{2}'.format(node_id, network_id, self.network_ids_[network_id]['size']))
-                        break
-                return True
-
-            if network_id not in self.network_ids_:
-                network_info = {
-                        'node_info': [{'node_id': node_id, 'node_ip': content.get('node_ip')}],
-                        'size': 1,
-                        }
-                self.network_ids_[network_id] = network_info
-                slog.info('add node_id:{0} to network_id:{1}, new network_id and now size is 1'.format(node_id, network_id))
-                return True
-            else:
-                for ni in self.network_ids_[network_id]['node_info']:
-                    if ni.get('node_id') == node_id:
-                        #slog.debug('already exist node_id:{0} in network_id:{1}'.format(node_id, network_id))
-                        return True
-                self.network_ids_[network_id]['node_info'].append({'node_id': node_id, 'node_ip': content.get('node_ip')})
-                self.network_ids_[network_id]['size']  += 1
-                slog.info('add node_id:{0} to network_id:{1}, now size is {2}'.format(node_id, network_id, self.network_ids_[network_id]['size']))
-                return True
-
-        return True
-
 
     # recv progress alarm,like down,high cpu,high mem...
     # TODO(smaug)
@@ -274,22 +207,22 @@ class AlarmConsumer(object):
         node_id = content.get('node_id')
         info = content.get('info')
         slog.info(info)
-        node_ip = self.get_node_ip(node_id)
+        node_ip = self.shared_cache_.get_node_ip(node_id)
         slog.info('get_node_ip {0} of node_id:{1}'.format(node_ip, node_id))
         if not node_ip:
             return False
-        self.remove_dead_node(node_ip)
+        self.shared_cache_.remove_dead_node(node_ip)
         return
 
 
     def dump_db(self):
         while True:
             # network_info
-            with self.network_ids_lock_:
-                slog.info("dump network_id to shm")
-                for (k,v) in self.network_ids_.items():
-                    net_data = {'network_id':k ,'network_info':json.dumps(v)}
-                    self.network_info_sql.update_insert_to_db(net_data)
+            slog.info("dump network_id to db")
+            network_ids = self.shared_cache_.get_all_network_info()
+            for (k,v) in network_ids.items():
+                net_data = {'network_id':k ,'network_info':json.dumps(v)}
+                self.network_info_sql.update_insert_to_db(net_data)
 
             # packet_info (drop,hop,time...)
             with self.packet_info_lock_:
@@ -365,18 +298,5 @@ class AlarmConsumer(object):
                 
             # wait 5 min until the next dump_db
             #time.sleep(5 * 60)
-            time.sleep(5)
+            time.sleep(20)
         return 
-
-    # get chain_hash from cache and db
-    def get_chain_hash(self, chain_hash):
-        with self.packet_info_lock_:
-            # TODO(smaug) get from packet_cache first, then from  cache, at last from db
-            cache_packet_info = self.packet_info_cache_.get(chain_hash)
-            if not cache_packet_info:
-                return {}
-            return cache_packet_info
-
-
-
-

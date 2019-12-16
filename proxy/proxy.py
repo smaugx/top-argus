@@ -14,20 +14,13 @@ from flask import Flask ,request, url_for, render_template,jsonify
 import sys
 import json
 import requests
-import redis
-import uuid
-import time
-import base64
 import copy
-import core
-import threading
 from common.slogging import slog
 import my_queue
 
 app = Flask(__name__)
 #mq = my_queue.CacheQueue()
 mq = my_queue.RedisQueue(host='127.0.0.1', port=6379, password='')
-consumer = core.AlarmConsumer(q=mq)
 
 gconfig = {
         'global_sample_rate': 100,  # sample_rate%
@@ -81,7 +74,7 @@ def config_update():
             }
     ret = {}
     if request.method == 'GET':
-        alarm_ip = request.remote_addr or request.X-Real-IP
+        alarm_ip = request.remote_addr or request.headers.get('X-Real-IP')
         slog.info("update config ip:{0}".format(alarm_ip))
         ret = {'status': 0, 'error': status_ret.get(0), 'config': gconfig, 'ip': alarm_ip}
         return jsonify(ret)
@@ -149,7 +142,9 @@ def alarm_report():
         ret = {'status': -2, 'error': status_ret.get(-2)}
         return jsonify(ret)
 
-    alarm_ip = request.remote_addr
+    # TODO(smaug) varify token
+
+    alarm_ip = request.remote_addr or request.headers.get('X-Real-IP')
     slog.info("recv alarm from ip:{0} size:{1}".format(alarm_ip, len(payload.get('data'))))
     mq.handle_alarm(payload.get('data'))
     ret = {'status': 0, 'error': status_ret.get(0)}
@@ -157,24 +152,10 @@ def alarm_report():
 
 
 def run():
-    # thread handle alarm and merge packet_info
-
     slog.info('proxy start...')
-
-    '''
-    consumer_th = threading.Thread(target = consumer.consume_alarm)
-    consumer_th.start()
-
-    # thread dump to db
-    dumpdb_th = threading.Thread(target = consumer.dump_db)
-    dumpdb_th.start()
-    '''
-
     app.run(host="0.0.0.0", port= 9090, debug=True)
     #app.run()
-
-    #consumer_th.join()
-    #dumpdb_th.join()
+    return
 
 
 if __name__ == '__main__':

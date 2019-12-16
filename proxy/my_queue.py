@@ -44,8 +44,28 @@ class RedisQueue(object):
     def __init__(self, host, port, password):
         self.mypool  = redis.ConnectionPool(host = host, port = port, password = password)
         self.myredis = redis.StrictRedis(connection_pool = self.mypool)
-        self.queue_key = 'topargus_alarm_list'
+        self.all_queue_keys = 'topargus_alarm_allkey_set'
+        self.queue_key_base = 'topargus_alarm_list'
+        self.queue_key_num = 4
+
+        for i in range(0,self.queue_key_num):
+            qkey = '{0}:{1}'.format(self.queue_key_base, i)
+            self.myredis.sadd(self.all_queue_keys, qkey)
         return
+    
+    def get_all_queue_keys(self):
+        queue_key_list = []
+        for i in range(0,self.queue_key_num):
+            qkey = '{0}:{1}'.format(self.queue_key_base, i)
+            queue_key_list.append(qkey)
+        return queue_key_list
+
+    def get_queue_key_with_hash(self, msg_hash = None):
+        # eg: topargus_alarm_list:0 ; topargus_alarm_list:1;topargus_alarm_list:2;topargus_alarm_list:3
+        qkey = '{0}:{1}'.format(self.queue_key_base, random.randint(0,10000) % self.queue_key_num)
+        if msg_hash != None and msg_hash != 0:
+            qkey = '{0}:{1}'.format(self.queue_key_base, msg_hash % self.queue_key_num)
+        return qkey 
 
     def qsize(self):
         return self.myredis.llen(self.queue_key)
@@ -56,7 +76,6 @@ class RedisQueue(object):
             return
     
         for item in data:
-            # item is string ,not dict
             self.put_queue(item)
         slog.debug("put {0} alarm in queue, now size is {1}".format(len(data), self.qsize()))
         return
@@ -64,13 +83,17 @@ class RedisQueue(object):
     def put_queue(self, item):
         if not isinstance(item, str):
             return
-        self.myredis.lpush(self.queue_key, item)
+        # TODO(smaug) for packet using chain_hash; other type using other hash
+        qkey = self.get_queue_key_with_hash(item.get('chain_hash'))
+        # item is dict, serialize to str
+        self.myredis.lpush(qkey, json.dumps(item))
         return
 
-    def get_queue(self):
-        item = self.myredis.brpop(self.queue_key, timeout=0) # will block here if no data get, return item is tuple
+    def get_queue(self, queue_key):
+        # eg: topargus_alarm_list:0 ; topargus_alarm_list:1;topargus_alarm_list:2;topargus_alarm_list:3
+        item = self.myredis.brpop(queue_key, timeout=0) # will block here if no data get, return item is tuple
         if not item:
-            return ''
-        return item[1]
+            return None
+        return json.loads(item[1])
     
 

@@ -10,36 +10,36 @@ exec(open(activate_this).read())
 import sys
 sys.path.insert(0, base_dir)
 
-import sys
-import json
-import requests
-import redis
-import uuid
-import time
-import base64
-import copy
 import core
-import threading
 from common.slogging import slog
 import my_queue
+import shared_cache
+import multiprocessing
 
 mq = my_queue.RedisQueue(host='127.0.0.1', port=6379, password='')
-consumer = core.AlarmConsumer(q=mq)
+scache = shared_cache.SharedCache()
 
 
 def run():
-    # thread handle alarm and merge packet_info
+    global mq, scache
+    all_queue_key = mq.get_all_queue_keys()  # set of queue_key
+    consumer_list = []
+    for item in all_queue_key:
+        consumer = core.AlarmConsumer(q=mq, queue_key = item, sharedcache = scache)
+        consumer_list.append(consumer)
 
-    consumer_th = threading.Thread(target = consumer.consume_alarm)
-    consumer_th.start()
+    process_list = []
+    for c in consumer_list:
+        p = Process(target=c.run)
+        p.start()
+        process_list.append(p)
 
-    # thread dump to db
-    dumpdb_th = threading.Thread(target = consumer.dump_db)
-    dumpdb_th.start()
+    slog.info('{0} consumer started'.format(len(consumer_list)))
 
-    #app.run()
-    consumer_th.join()
-    dumpdb_th.join()
+    for p in process_list:
+        p.join()
+
+    return
 
 
 if __name__ == '__main__':
