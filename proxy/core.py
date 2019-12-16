@@ -346,6 +346,7 @@ class AlarmConsumer(object):
         return
 
     def dump_db_packetinfo(self):
+        while True:
             # packet_info (drop,hop,time...)
             with self.packet_info_lock_:
                 slog.info("dump packet_info to db")
