@@ -24,7 +24,7 @@ gconfig = {
         'alarm_pack_num': 1,   # upload alarm size one time
         'grep_broadcast': {
             'start': 'true',
-            'sample_rate': 5,
+            'sample_rate': 4,
             'alarm_type': 'packet',
             'network_focus_on': ['660000', '680000', '690000'], # src or dest
             'network_ignore':   ['670000'],  # src or dest

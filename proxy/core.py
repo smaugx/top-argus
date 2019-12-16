@@ -222,7 +222,10 @@ class AlarmConsumer(object):
         with self.network_ids_lock_:
             if network_id.startswith('010000'):
                 network_id = '010000'
+            self.load_shm_networksize_once_with_nolock()
+
             if network_id not in self.network_ids_:
+                slog.warn('get network size 0 of {0}, network_ids:{1}'.format(network_id, json.dumps(self.network_ids_)))
                 return 0
             return self.network_ids_[network_id]['size']
 
@@ -332,18 +335,43 @@ class AlarmConsumer(object):
             time.sleep(20)
         return
 
+    def load_shm_networksize_once(self):
+        if self.queue_key_.find('packet') == -1:
+            return False
+        if not os.path.exists(self.network_ids_shm_file_):
+            return False
+        with self.network_ids_lock_:
+            slog.info("load network_id from shm")
+            with open(self.network_ids_shm_file_, 'r') as fin:
+                self.network_ids_ = json.loads(fin.read())
+                fin.close()
+                slog.debug('load network_info from shm:{0} {1}'.format(self.network_ids_shm_file_,json.dumps(self.network_ids_)))
+
+        return True
+
+    def load_shm_networksize_once_with_nolock(self):
+        if self.queue_key_.find('packet') == -1:
+            return False
+        if not os.path.exists(self.network_ids_shm_file_):
+            return False
+        slog.info("load network_id from shm")
+        with open(self.network_ids_shm_file_, 'r') as fin:
+            self.network_ids_ = json.loads(fin.read())
+            fin.close()
+            slog.debug('load network_info from shm:{0} {1}'.format(self.network_ids_shm_file_,json.dumps(self.network_ids_)))
+
+        return True
+
+
+
+
     def load_shm_networksize(self):
         if self.queue_key_.find('packet') == -1:
             return
         while True:
-            with self.network_ids_lock_:
-                slog.info("load network_id from shm")
-                if not os.path.exists(self.network_ids_shm_file_):
-                    continue
-                with open(self.network_ids_shm_file_, 'r') as fin:
-                    self.network_ids_ = json.loads(fin.read())
-                    fin.close()
-                    slog.debug('load network_info from shm:{0}'.format(self.network_ids_shm_file_))
+            if not self.load_shm_networksize_once():
+                time.sleep(0.5)
+                continue
 
             time.sleep(20)
         return
