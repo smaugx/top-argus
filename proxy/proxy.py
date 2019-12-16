@@ -93,7 +93,7 @@ def config_update():
     if request.method == 'GET':
         alarm_ip = request.remote_addr or request.headers.get('X-Real-IP')
         slog.info("update config ip:{0}".format(alarm_ip))
-        gconfig = load_gconfig()
+        load_gconfig()
         ret = {'status': 0, 'error': status_ret.get(0), 'config': gconfig, 'ip': alarm_ip}
         return jsonify(ret)
 
