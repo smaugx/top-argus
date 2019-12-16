@@ -67,8 +67,8 @@ class RedisQueue(object):
             qkey = '{0}:{1}'.format(self.queue_key_base, msg_hash % self.queue_key_num)
         return qkey 
 
-    def qsize(self):
-        return self.myredis.llen(self.queue_key)
+    def qsize(self, queue_key):
+        return self.myredis.llen(queue_key)
 
     # handle alarm 
     def handle_alarm(self, data):
@@ -77,7 +77,6 @@ class RedisQueue(object):
     
         for item in data:
             self.put_queue(item)
-        slog.debug("put {0} alarm in queue, now size is {1}".format(len(data), self.qsize()))
         return
 
     def put_queue(self, item):
@@ -87,6 +86,7 @@ class RedisQueue(object):
         qkey = self.get_queue_key_with_hash(item.get('chain_hash'))
         # item is dict, serialize to str
         self.myredis.lpush(qkey, json.dumps(item))
+        slog.debug("put type:{0} alarm in queue, now size is {1}".format(item.get('alarm_type'), self.qsize(qkey)))
         return
 
     def get_queue(self, queue_key):

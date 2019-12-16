@@ -14,7 +14,7 @@ import core
 from common.slogging import slog
 import my_queue
 import shared_cache
-import multiprocessing
+from multiprocessing import Process
 
 mq = my_queue.RedisQueue(host='127.0.0.1', port=6379, password='')
 scache = shared_cache.SharedCache()

@@ -86,7 +86,7 @@ class AlarmConsumer(object):
     
     def consume_alarm(self):
         while True:
-            slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize()))
+            slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize(self.queue_key_)))
             try:
                 alarm_payload = self.alarm_queue_.get_queue(self.queue_key_)  # return dict or None
                 alarm_type = alarm_payload.get('alarm_type')
@@ -126,8 +126,8 @@ class AlarmConsumer(object):
                             'alarm_content': packet_info,
                             }
                     self.alarm_queue_.put_queue(tmp_alarm_payload)
-                    if self.alarm_queue_.qsize() < 500:  # avoid more cpu
-                        slog.info('hold packet_info: {0}, queue size: {1}'.format(json.dumps(packet_info), self.alarm_queue_.qsize() ))
+                    if self.alarm_queue_.qsize(self.queue_key_) < 500:  # avoid more cpu
+                        slog.info('hold packet_info: {0}, queue size: {1}'.format(json.dumps(packet_info), self.alarm_queue_.qsize(self.queue_key_) ))
                         time.sleep(0.1)
                         return False 
                 else: #recv info and after send info
