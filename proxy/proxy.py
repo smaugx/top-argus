@@ -17,13 +17,13 @@ import requests
 import copy
 from common.slogging import slog
 import my_queue
-import multiprocessing
 
 app = Flask(__name__)
 #mq = my_queue.CacheQueue()
 mq = my_queue.RedisQueue(host='127.0.0.1', port=6379, password='')
+gconfig_shm_file = '/dev/shm/topargus_gconfig'
 
-gconfig_d = {
+gconfig = {
         'global_sample_rate': 100,  # sample_rate%
         'alarm_pack_num': 2,   # upload alarm size one time
         'grep_broadcast': {
@@ -53,8 +53,21 @@ gconfig_d = {
             },
         }
 
+def dump_gconfig():
+    global gconfig, gconfig_shm_file
+    with open(gconfig_shm_file,'w') as fout:
+        fout.write(json.dumps(gconfig))
+        fout.close()
+    return
 
-gconfig = multiprocessing.Manager().dict(gconfig_d)
+def load_gconfig():
+    global gconfig, gconfig_shm_file
+    with open(gconfig_shm_file,'r') as fin:
+        gconfig = json.loads(fin.read())
+        fin.close()
+    return
+
+dump_gconfig()
 
 @app.route('/')
 def hello_world():
@@ -80,7 +93,8 @@ def config_update():
     if request.method == 'GET':
         alarm_ip = request.remote_addr or request.headers.get('X-Real-IP')
         slog.info("update config ip:{0}".format(alarm_ip))
-        ret = {'status': 0, 'error': status_ret.get(0), 'config': gconfig.copy(), 'ip': alarm_ip}
+        gconfig = load_gconfig()
+        ret = {'status': 0, 'error': status_ret.get(0), 'config': gconfig, 'ip': alarm_ip}
         return jsonify(ret)
 
     if request.method == 'PUT':
@@ -102,7 +116,7 @@ def config_update():
             ret['error'] = status_ret.get(-2)
             return jsonify(ret)
         if payload.get('test') == 'true':
-            out = '[test] update config: {0}, old_config: {1}'.format(json.dumps(config, indent = 4), json.dumps(gconfig.copy(), indent = 4))
+            out = '[test] update config: {0}, old_config: {1}'.format(json.dumps(config, indent = 4), json.dumps(gconfig, indent = 4))
             print(out)
             slog.info(out)
             ret['status'] = 0
@@ -110,12 +124,12 @@ def config_update():
             ret['config'] = config
             return jsonify(ret)
         if payload.get('test') == 'false':
-            out = 'update config: {0}, old_config: {1}'.format(json.dumps(config, indent = 4), json.dumps(gconfig.copy(), indent = 4))
+            out = 'update config: {0}, old_config: {1}'.format(json.dumps(config, indent = 4), json.dumps(gconfig, indent = 4))
             print(out)
             slog.info(out)
-            #gconfig = copy.deepcopy(config)
-            gconfig = multiprocessing.Manager().dict(config)
-            slog.info('udpate config finished, config is: {0}'.format(json.dumps(gconfig.copy(), indent = 4)))
+            gconfig = copy.deepcopy(config)
+            dump_gconfig()   # dump to shm
+            slog.info('udpate config finished, config is: {0}'.format(json.dumps(gconfig, indent = 4)))
             ret['status'] = 0
             ret['error'] = status_ret.get(0)
             ret['config'] = config
