@@ -22,16 +22,20 @@ def run():
     all_queue_key = mq.get_all_queue_keys()  # set of queue_key
     consumer_list = []
     for item in all_queue_key:
+        print(item)
         consumer = core.AlarmConsumer(q=mq, queue_key = item)
         consumer_list.append(consumer)
 
+    print(consumer_list)
     process_list = []
     for c in consumer_list:
         p = Process(target=c.run)
-        p.start()
         process_list.append(p)
 
     slog.info('{0} consumer started'.format(len(consumer_list)))
+
+    for p in process_list:
+        p.start()
 
     for p in process_list:
         p.join()
