@@ -80,7 +80,7 @@ class RedisQueue(object):
         return
 
     def put_queue(self, item):
-        if not isinstance(item, str):
+        if not isinstance(item, dict):
             return
         # TODO(smaug) for packet using chain_hash; other type using other hash
         qkey = self.get_queue_key_with_hash(item.get('chain_hash'))
