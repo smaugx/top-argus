@@ -19,7 +19,7 @@ slog.setLevel(logging.DEBUG)
 %(funcName)s        调用日志输出函数的函数名
 %(lineno)d          调用日志输出函数的语句所在的代码行
 '''
-fmt = logging.Formatter('[%(asctime)s][%(thread)d][%(levelname)s][%(filename)s][%(funcName)s][%(lineno)d]:%(message)s', '%Y-%m-%d %H:%M:%S')
+fmt = logging.Formatter('[%(asctime)s][%(process)d][%(thread)d][%(levelname)s][%(filename)s][%(funcName)s][%(lineno)d]:%(message)s', '%Y-%m-%d %H:%M:%S')
 
 #设置CMD日志
 sh = logging.StreamHandler()

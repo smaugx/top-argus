@@ -3,6 +3,7 @@
 
 import redis
 import json
+import random
 import time
 import copy
 import queue
@@ -83,7 +84,7 @@ class RedisQueue(object):
         if not isinstance(item, dict):
             return
         # TODO(smaug) for packet using chain_hash; other type using other hash
-        qkey = self.get_queue_key_with_hash(item.get('chain_hash'))
+        qkey = self.get_queue_key_with_hash(item.get('alarm_content').get('chain_hash'))
         # item is dict, serialize to str
         self.myredis.lpush(qkey, json.dumps(item))
         slog.debug("put type:{0} alarm in queue, now size is {1}".format(item.get('alarm_type'), self.qsize(qkey)))
