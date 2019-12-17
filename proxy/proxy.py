@@ -16,7 +16,7 @@ import json
 import requests
 import copy
 from common.slogging import slog
-import my_queue
+import common.my_queue as my_queue
 
 app = Flask(__name__)
 #mq = my_queue.CacheQueue()

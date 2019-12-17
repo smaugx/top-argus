@@ -168,6 +168,7 @@ class NetworkInfoSql(Bean):
 
         where = ' and '.join(where)
         vs,total = [],0
+
         vs = cls.select_vs(where=where, page=page, limit=limit, order='')
         total = cls.total(where = where )
         slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
