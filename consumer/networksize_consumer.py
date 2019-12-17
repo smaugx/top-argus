@@ -10,7 +10,6 @@ import copy
 import threading
 from database.packet_sql import NetworkInfoSql
 from common.slogging import slog
-import my_queue
 
 
 class NetworkSizeAlarmConsumer(object):
@@ -90,7 +89,7 @@ class NetworkSizeAlarmConsumer(object):
             return
 
         # something updated
-        dump_db_networksize()
+        self.dump_db_networksize()
         return
 
     def networksize_alarm_ent(self, content):
@@ -140,7 +139,7 @@ class NetworkSizeAlarmConsumer(object):
         if not self.progress_alarm(content):
             return
 
-        dump_db_networksize()
+        self.dump_db_networksize()
         return
 
     # recv progress alarm,like down,high cpu,high mem...
@@ -164,9 +163,8 @@ class NetworkSizeAlarmConsumer(object):
     def dump_db_networksize(self):
         # network_info
         slog.info("dump network_id to db")
-        now = int(time.time())
-        now_belong = (now / 30 + 1) * 30
         for (k,v) in self.network_ids_.items():
-            net_data = {'network_id':k ,'network_info':json.dumps(v), 'update_timestamp': now_belong}
+            net_data = {'network_id':k ,'network_info':json.dumps(v)}
+            slog.info('dump network_id:{0} size:{1}'.format(k, v.get('size')))
             self.network_info_sql.update_insert_to_db(net_data)
         return

@@ -3,3 +3,4 @@ vv/*
 *.log
 __pycache__/*
 vvlinux
+/proxy/log

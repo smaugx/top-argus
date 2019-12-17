@@ -9,6 +9,7 @@ exec(open(activate_this).read())
 
 import sys
 sys.path.insert(0, base_dir)
+import json
 
 from common.slogging import slog
 import common.my_queue as my_queue
@@ -42,14 +43,14 @@ def run():
     # packet
     for qkey in qkey_map.get('packet'):
         slog.warn('create consumer for packet, assign queue_key:{0}'.format(qkey))
-        consumer = packet_consumer.PacketAlarmConsumer(q=mq, queue_key = [qkey])
+        consumer = packet_consumer.PacketAlarmConsumer(q=mq, queue_key_list = [qkey])
         consumer_list.append(consumer)
 
 
     # networksize and progress
     for qkey in zip(qkey_map.get('progress'), qkey_map.get('networksize')):
         slog.warn('create consumer for networksize/progress, assign queue_key:{0}'.format(json.dumps(list(qkey))))
-        consumer = networksize_consumer.NetworkSizeAlarmConsumer(q=mq, queue_key = list(qkey))
+        consumer = networksize_consumer.NetworkSizeAlarmConsumer(q=mq, queue_key_list = list(qkey))
         consumer_list.append(consumer)
 
     print(consumer_list)

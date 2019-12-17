@@ -3,6 +3,7 @@
 
 import redis
 import json
+import hashlib
 import random
 import queue
 from common.slogging import slog
@@ -78,7 +79,7 @@ class RedisQueue(object):
             if network_id.startswith('010000'):
                 network_id = '010000'
 
-            msg_hash = int(int(hashlib.sha256(network_id).hexdigest(), 16) % 10**8)
+            msg_hash = int(int(hashlib.sha256(network_id.encode('utf-8')).hexdigest(), 16) % 10**8)
         else:
             msg_hash = random.randint(0,10000)
 
