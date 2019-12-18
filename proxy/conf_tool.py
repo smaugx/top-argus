@@ -24,10 +24,10 @@ gconfig = {
         'alarm_pack_num': 2,   # upload alarm size one time
         'grep_broadcast': {
             'start': 'true',
-            'sample_rate': 20,
+            'sample_rate': 15,
             'alarm_type': 'packet',
-            'network_focus_on': ['660000', '680000', '690000'], # src or dest
-            'network_ignore':   ['670000'],  # src or dest
+            'network_focus_on': ['640000',  '650000', '660000', '670000', '680000', '690000'], # src or dest
+            'network_ignore':   [],  # src or dest
             },
         'grep_point2point': {
             'start': 'false',
@@ -38,10 +38,8 @@ gconfig = {
             },
         'grep_networksize': {
             'start': 'true',
-            'sample_rate': 10,
+            'sample_rate': 7,
             'alarm_type': 'networksize',
-            'network_focus_on': ['660000', '680000', '690000'], # src or dest
-            'network_ignore':   ['670000'],  # src or dest
             },
         'grep_xtopchain': {
             'start': 'true',

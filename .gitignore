@@ -4,3 +4,4 @@ vv/*
 __pycache__/*
 vvlinux
 /proxy/log
+common/config.py
