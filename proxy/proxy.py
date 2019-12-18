@@ -65,7 +65,8 @@ def config_update():
             }
     ret = {}
     if request.method == 'GET':
-        alarm_ip = request.remote_addr or request.headers.get('X-Real-IP')
+        alarm_ip = request.headers.get('X-Forwarded-For') or request.headers.get('X-Real-IP') or request.remote_addr
+        alarm_ip = request.remote_addr or request.proxy_add_x_forwarded_for
         slog.info("update config ip:{0}".format(alarm_ip))
         load_gconfig()
         ret = {'status': 0, 'error': status_ret.get(0), 'config': gconfig, 'ip': alarm_ip}
@@ -137,7 +138,7 @@ def alarm_report():
 
     # TODO(smaug) varify token
 
-    alarm_ip = request.remote_addr or request.headers.get('X-Real-IP')
+    alarm_ip = request.headers.get('X-Forwarded-For') or request.headers.get('X-Real-IP') or request.remote_addr
     slog.info("recv alarm from ip:{0} size:{1}".format(alarm_ip, len(payload.get('data'))))
     mq.handle_alarm(payload.get('data'))
     ret = {'status': 0, 'error': status_ret.get(0)}
@@ -146,7 +147,8 @@ def alarm_report():
 
 def run():
     slog.info('proxy start...')
-    app.run(host="0.0.0.0", port= 9090, debug=True)
+    #app.run(host="0.0.0.0", port= 9091, debug=True)
+    app.run(host="127.0.0.1", port= 9091, debug=True)
     #app.run()
     return
 
