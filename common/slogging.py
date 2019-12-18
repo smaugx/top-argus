@@ -2,17 +2,30 @@
 #-*-coding:utf8 -*-
 
 import logging,os
+import config as sconfig
 
 base_path = './log'
 pid= os.getpid()
-#TODO(smaug)
 pid = 'xx'
-path = os.path.join(base_path, 'xx-{0}.log'.format(pid))
+path = os.path.join(base_path, 'topargus-{0}.log'.format(pid))
 if not os.path.exists(base_path):
     os.mkdir(base_path)
 
 slog = logging.getLogger(path)
-slog.setLevel(logging.DEBUG)
+
+if sconfig.LOGLEVEL == 'debug':
+    slog.setLevel(logging.DEBUG)
+elif sconfig.LOGLEVEL == 'info':
+    slog.setLevel(logging.INFO)
+elif sconfig.LOGLEVEL == 'warn':
+    slog.setLevel(logging.WARNING)
+elif sconfig.LOGLEVEL == 'error':
+    slog.setLevel(logging.ERROR)
+elif sconfig.LOGLEVEL == 'critical':
+    slog.setLevel(logging.CRITICAL)
+else:
+    slog.setLevel(logging.DEBUG)
+
 '''
 %(filename)s        调用日志输出函数的模块的文件名
 %(module)s          调用日志输出函数的模块名

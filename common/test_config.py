@@ -3,6 +3,10 @@
 
 # in production environment:        mv test_config.py config.py 
 
+# log set
+# log level: debug/info/warn/error/critical
+LOGLEVEL = 'debug'
+
 # alarm database
 # TODO: read from api instead of db
 TOPARGUS_ALARM_DB_HOST = "127.0.0.1"
@@ -20,10 +24,12 @@ LANGUAGES   = {
     'zh_CN':  'Chinese-Simplified',
 }
 
+# redis config
 REDIS_HOST = "127.0.0.1"
 REDIS_PORT = "6379"
 REDIS_PASS = "smaug_redis_123"
 
+# for alarm proxy
 SHM_GCONFIG_FILE = '/dev/shm/topargus_gconfig'
 
 PROXY_CONFIG = {
