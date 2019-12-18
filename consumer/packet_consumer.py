@@ -310,7 +310,7 @@ class PacketAlarmConsumer(object):
         # packet_info (drop,hop,time...)
         slog.info("dump packet_info to db")
         if len(self.packet_info_chain_hash_) < 100:
-            slog.warn('packet cache size:{0} less then 50, will not dump to db'.format(len(self.packet_info_chain_hash_)))
+            slog.warn('packet cache size:{0} less then 100, will not dump to db'.format(len(self.packet_info_chain_hash_)))
             return
         now = int(time.time() * 1000)
         tmp_remove_chain_hash_list = []  # keep ready to remove chain_hash
