@@ -63,6 +63,7 @@ class PacketAlarmConsumer(object):
                 '0_5':0,
                 '5_10':0,
                 '10_15':0,
+                '15_20':0,
                 '20_':0
                 },
                 'taking': {
@@ -285,6 +286,8 @@ class PacketAlarmConsumer(object):
         self.network_ids_[vs[0].get('network_id')] = json.loads(vs[0].get('network_info'))
         self.network_ids_['update'] = int(time.time() * 1000)
         for k,v in self.network_ids_.items():
+            if k == 'update':
+                continue
             slog.debug('after update network_id:{0} size:{1}'.format(k, v.get('size')))
 
         if network_id not in self.network_ids_:
@@ -314,7 +317,7 @@ class PacketAlarmConsumer(object):
         # packet_info (drop,hop,time...)
         slog.info("dump packet_info to db")
         if len(self.packet_info_chain_hash_) < 100:
-            slog.warn('packet cache size:{0} less then 100, will not dump to db'.format(len(self.packet_info_chain_hash_)))
+            slog.info('packet cache size:{0} less then 100, will not dump to db'.format(len(self.packet_info_chain_hash_)))
             return
         now = int(time.time() * 1000)
         tmp_remove_chain_hash_list = []  # keep ready to remove chain_hash
