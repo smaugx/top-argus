@@ -56,6 +56,7 @@ class NetworkSizeAlarmConsumer(object):
             try:
                 alarm_payload_list = self.alarm_queue_.get_queue_exp(self.queue_key_list_, self.consume_step_)  # return dict or None
                 for alarm_payload in alarm_payload_list:
+                    alarm_type = alarm_payload.get('alarm_type')
                     if alarm_type == 'networksize':
                         self.networksize_alarm(alarm_payload.get('alarm_content'))
                     elif alarm_type == 'progress':
