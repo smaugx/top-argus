@@ -132,4 +132,12 @@ class RedisQueue(object):
         slog.debug('get_queue {0}'.format(item))
         return json.loads(item[1])
     
-
+    # get multi-item one time
+    def get_queue_exp(self, queue_key_list):
+        item_list = []
+        for i in range(0, 300):
+            item = self.get_queue(queue_key_list):
+            if item != None:
+                item_list.append(item)
+        slog.debug('get_queue multi-item size:{0}'.format(len(item_list)))
+        return item_list

@@ -20,6 +20,7 @@ class PacketAlarmConsumer(object):
     def __init__(self, q, queue_key_list):
         slog.info("packet alarmconsumer init. pid:{0} paraent:{1} queue_key:{2}".format(os.getpid(), os.getppid(), json.dumps(queue_key_list)))
         self.expire_time_  = 20  # 10min, only focus on latest 10 min
+        self.consume_step_ = 300 # get_queue return size for one time
 
         self.packet_recv_info_flag_ = False  # False: will not track or store recv ndoes/ip of packet; True is reverse
 
@@ -87,12 +88,13 @@ class PacketAlarmConsumer(object):
     def consume_alarm_with_notry(self):
         while True:
             slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize(self.queue_key_list_)))
-            alarm_payload = self.alarm_queue_.get_queue(self.queue_key_list_)  # return dict or None
-            alarm_type = alarm_payload.get('alarm_type')
-            if alarm_type == 'packet':
-                self.packet_alarm(alarm_payload.get('alarm_content'))
-            else:
-                slog.warn('invalid alarm_type:{0}'.format(alarm_type))
+            alarm_payload_list = self.alarm_queue_.get_queue_exp(self.queue_key_list_, self.consume_step_)  # return dict or None
+            for alarm_payload in alarm_payload_list:
+                alarm_type = alarm_payload.get('alarm_type')
+                if alarm_type == 'packet':
+                    self.packet_alarm(alarm_payload.get('alarm_content'))
+                else:
+                    slog.warn('invalid alarm_type:{0}'.format(alarm_type))
         return
 
 
@@ -100,12 +102,13 @@ class PacketAlarmConsumer(object):
         while True:
             slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize(self.queue_key_list_)))
             try:
-                alarm_payload = self.alarm_queue_.get_queue(self.queue_key_list_)  # return dict or None
-                alarm_type = alarm_payload.get('alarm_type')
-                if alarm_type == 'packet':
-                    self.packet_alarm(alarm_payload.get('alarm_content'))
-                else:
-                    slog.warn('invalid alarm_type:{0}'.format(alarm_type))
+                alarm_payload_list = self.alarm_queue_.get_queue_exp(self.queue_key_list_, self.consume_step_)  # return dict or None
+                for alarm_payload in alarm_payload_list:
+                    alarm_type = alarm_payload.get('alarm_type')
+                    if alarm_type == 'packet':
+                        self.packet_alarm(alarm_payload.get('alarm_content'))
+                    else:
+                        slog.warn('invalid alarm_type:{0}'.format(alarm_type))
             except Exception as e:
                 slog.warn('catch exception:{0}'.format(e))
         return

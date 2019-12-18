@@ -19,6 +19,8 @@ class NetworkSizeAlarmConsumer(object):
         # something like {'690000010140ff7f': {'node_info': [{'node_id': xxxx, 'node_ip':127.0.0.1:9000}], 'size':1}}
         self.network_ids_ = {}
 
+        self.consume_step_ = 30
+
         # store packet_info from /api/alarm
         self.alarm_queue_ = q 
         self.queue_key_list_ = queue_key_list # eg: topargus_alarm_list:0 for one consumer bind to one or more queue_key
@@ -36,22 +38,8 @@ class NetworkSizeAlarmConsumer(object):
     def consume_alarm_with_notry(self):
         while True:
             slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize(self.queue_key_list_)))
-            alarm_payload = self.alarm_queue_.get_queue(self.queue_key_list_)  # return dict or None
-            alarm_type = alarm_payload.get('alarm_type')
-            if alarm_type == 'networksize':
-                self.networksize_alarm(alarm_payload.get('alarm_content'))
-            elif alarm_type == 'progress':
-                self.progress_alarm(alarm_payload.get('alarm_content'))
-            else:
-                slog.warn('invalid alarm_type:{0}'.format(alarm_type))
-        return
-
-
-    def consume_alarm(self):
-        while True:
-            slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize(self.queue_key_list_)))
-            try:
-                alarm_payload = self.alarm_queue_.get_queue(self.queue_key_list_)  # return dict or None
+            alarm_payload_list = self.alarm_queue_.get_queue_exp(self.queue_key_list_, self.consume_step_)  # return dict or None
+            for alarm_payload in alarm_payload_list:
                 alarm_type = alarm_payload.get('alarm_type')
                 if alarm_type == 'networksize':
                     self.networksize_alarm(alarm_payload.get('alarm_content'))
@@ -59,6 +47,21 @@ class NetworkSizeAlarmConsumer(object):
                     self.progress_alarm(alarm_payload.get('alarm_content'))
                 else:
                     slog.warn('invalid alarm_type:{0}'.format(alarm_type))
+        return
+
+
+    def consume_alarm(self):
+        while True:
+            slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize(self.queue_key_list_)))
+            try:
+                alarm_payload_list = self.alarm_queue_.get_queue_exp(self.queue_key_list_, self.consume_step_)  # return dict or None
+                for alarm_payload in alarm_payload_list:
+                    if alarm_type == 'networksize':
+                        self.networksize_alarm(alarm_payload.get('alarm_content'))
+                    elif alarm_type == 'progress':
+                        self.progress_alarm(alarm_payload.get('alarm_content'))
+                    else:
+                        slog.warn('invalid alarm_type:{0}'.format(alarm_type))
             except Exception as e:
                 slog.warn('catch exception:{0}'.format(e))
         return
