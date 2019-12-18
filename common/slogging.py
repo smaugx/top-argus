@@ -2,7 +2,7 @@
 #-*-coding:utf8 -*-
 
 import logging,os
-import config as sconfig
+import common.config as sconfig
 
 base_path = './log'
 pid= os.getpid()
