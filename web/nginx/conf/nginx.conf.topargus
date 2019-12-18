@@ -36,7 +36,7 @@ http{
 
         server{
             listen 80;
-            server_name topargus;
+            server_name 192.168.50.242;
             charset    utf-8; #设置编码为utf-8;
 
             #location / {
