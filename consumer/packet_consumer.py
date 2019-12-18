@@ -20,7 +20,7 @@ class PacketAlarmConsumer(object):
     def __init__(self, q, queue_key_list):
         slog.info("packet alarmconsumer init. pid:{0} paraent:{1} queue_key:{2}".format(os.getpid(), os.getppid(), json.dumps(queue_key_list)))
         self.expire_time_  = 20  # 10min, only focus on latest 10 min
-        self.consume_step_ = 300 # get_queue return size for one time
+        self.consume_step_ = 2000 # get_queue return size for one time
 
         self.packet_recv_info_flag_ = False  # False: will not track or store recv ndoes/ip of packet; True is reverse
 
@@ -306,7 +306,7 @@ class PacketAlarmConsumer(object):
         update = self.network_ids_.get('update') or 0
         slog.debug('diff:{0} secs'.format( (now - update) / 1000))
 
-        if not update or (now - update > 20 * 1000) or (network_id not in self.network_ids_):
+        if not update or (now - update > 60 * 1000) or (network_id not in self.network_ids_):
             if not self.update_network_ids(network_id):
                 return 0
 
