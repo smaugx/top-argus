@@ -1,7 +1,7 @@
 #!/usr/bin/env python 
 #-*- coding:utf8 -*-
 import MySQLdb
-import config
+import common.config as config
 
 argus_alarm_db_cfg = {
         "DB_HOST": config.ARGUS_ALARM_DB_HOST,

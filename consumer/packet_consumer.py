@@ -75,10 +75,11 @@ class PacketAlarmConsumer(object):
     def run(self):
         # usually for one consumer , only handle one type
         slog.info('consume_alarm run')
-        self.consume_alarm1()
+        #self.consume_alarm_with_notry()
+        self.consume_alarm()
         return
 
-    def consume_alarm1(self):
+    def consume_alarm_with_notry(self):
         while True:
             slog.info("begin consume_alarm alarm_queue.size is {0}".format(self.alarm_queue_.qsize(self.queue_key_list_)))
             alarm_payload = self.alarm_queue_.get_queue(self.queue_key_list_)  # return dict or None

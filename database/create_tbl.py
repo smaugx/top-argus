@@ -1,7 +1,7 @@
 #!/usr/bin/env python 
 #-*- coding:utf8 -*-
 import MySQLdb
-import config
+import common.config as config
 
 TOPARGUS_alarm_db_cfg = {
         "DB_HOST": config.TOPARGUS_ALARM_DB_HOST,

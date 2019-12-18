@@ -1,6 +1,6 @@
 #-*- coding:utf-8 -*-
 #import MySQLdb
-import database.config as config
+import common.config as config
 import pymysql.cursors
 
 

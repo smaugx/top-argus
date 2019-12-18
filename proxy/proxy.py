@@ -17,41 +17,15 @@ import requests
 import copy
 from common.slogging import slog
 import common.my_queue as my_queue
+import common.config as sconfig
 
 app = Flask(__name__)
 #mq = my_queue.CacheQueue()
-mq = my_queue.RedisQueue(host='127.0.0.1', port=6379, password='')
-gconfig_shm_file = '/dev/shm/topargus_gconfig'
+mq = my_queue.RedisQueue(host= sconfig.REDIS_HOST, port=sconfig.REDIS_PORT, password=sconfig.REDIS_PASS)
+gconfig_shm_file = sconfig.SHM_GCONFIG_FILE
 
-gconfig = {
-        'global_sample_rate': 50,  # sample_rate%
-        'alarm_pack_num': 2,   # upload alarm size one time
-        'grep_broadcast': {
-            'start': 'true',
-            'sample_rate': 10,
-            'alarm_type': 'packet',
-            'network_focus_on': ['660000', '680000', '690000', '670000'], # src or dest
-            'network_ignore':   ['650000'],  # src or dest
-            },
-        'grep_point2point': {
-            'start': 'false',
-            'sample_rate': 10,
-            'alarm_type': 'packet',
-            'network_focus_on': ['660000', '680000', '690000'], # src or dest
-            'network_ignore':   ['670000'],  # src or dest
-            },
-        'grep_networksize': {
-            'start': 'true',
-            'sample_rate': 5,
-            'alarm_type': 'networksize',
-            'network_focus_on': ['660000', '680000', '690000'], # src or dest
-            'network_ignore':   ['670000'],  # src or dest
-            },
-        'grep_xtopchain': {
-            'start': 'true',
-            'alarm_type': 'progress',
-            },
-        }
+
+gconfig = sconfig.PROXY_CONFIG
 
 def dump_gconfig():
     global gconfig, gconfig_shm_file
