@@ -280,7 +280,8 @@ class PacketAlarmConsumer(object):
                 }
         vs, total = self.query_network_ids(data)
         if not vs:
-            return
+            slog.warn('query network:{0} info from db failed'.format(network_id))
+            return False
         self.network_ids_[vs[0].get('network_id')] = json.loads(vs[0].get('network_info'))
         self.network_ids_['update'] = int(time.time() * 1000)
         for k,v in self.network_ids_.items():
@@ -289,7 +290,8 @@ class PacketAlarmConsumer(object):
         if network_id not in self.network_ids_:
             slog.warn('after update can not get network_info of {0} '.format(network_id))
             print(self.network_ids_.get(network_id))
-        return
+            return False
+        return True
 
     def get_networksize_from_remote(self, network_id):
         if network_id.startswith('010000'):
@@ -297,8 +299,10 @@ class PacketAlarmConsumer(object):
         now = int(time.time() * 1000)
         update = self.network_ids_.get('update') or 0
         slog.debug('diff:{0} secs'.format( (now - update) / 1000))
-        if not update or (now - update > 20 * 1000):
-            self.update_network_ids(network_id)
+
+        if not update or (now - update > 20 * 1000) or (network_id not in self.network_ids_):
+            if not self.update_network_ids(network_id):
+                return 0
 
         if network_id not in self.network_ids_:
             slog.warn('can not get network_info of {0}'.format(network_id))
