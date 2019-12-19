@@ -18,6 +18,7 @@ from common.slogging import slog
 
 user_info_sql = UserInfoSql()
 
+user_data_file = './user.data'
 user_list = [
         'smaug',
         'taylor',
@@ -60,12 +61,50 @@ def generate_password(user):
         password += c
     return password
 
-def create_all_user():
-    global user_list
+def create_all_user_with_file():
+    global user_data_file
+
+    user_data_list = []
+    if os.path.exists(user_data_file):
+        with open(user_data_file, 'r') as fin:
+            for line in fin:
+                print(line)
+                if line.startswith('#') or line.startswith('$'):
+                    continue
+                if line.endswith('\n'):
+                    line = line[:-1]
+                sp = line.split(' ')
+                if len(sp) != 2:
+                    print("filed error in {0}, line eg:\nsomeusername somepassword".format(user_data_file))
+                    continue
+                username = sp[0]
+                password = sp[1]
+                print('parse username:{0} password:{1}'.format(username, password))
+                user_data_list.append([username, password])
+            fin.close()
+
+    for item in user_data_list:
+        print('will create username:{0} password:{1}'.format(item[0], item[1]))
+        add_user(item[0], item[1])
+
+    return
+
+
+def create_all_user_with_randompass():
+    global user_list, user_data_file
+    user_data_list = []
     for user in user_list:
         password = generate_password(user)
         print('user:{0} pass:{1}'.format(user, password))
         add_user(user, password)
+        user_data_list.append([user, password])
+
+    with open(user_data_file, 'w') as fout:
+        for item in user_data_list:
+            line = '{0} {1}\n'.format(item[0], item[1])
+            fout.write(line)
+        fout.close()
+
     return
 
 
@@ -92,10 +131,16 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--password', help='password')
     parser.add_argument('-m', '--mail', help='email', default = '123@topargus.com')
     parser.add_argument('-a', '--all', help='create all users,should call once', default = 'false')
+    parser.add_argument('-f', '--filename', help='create all users from filename', default = '')
     args = parser.parse_args()
 
     if args.all == 'true':
-        create_all_user()
+        create_all_user_with_randompass()
+        sys.exit(0)
+
+    if args.filename:
+        create_all_user_with_file()
+        sys.exit(0)
 
     if args.username != None and args.password != None:
         add_user(args.username, args.password, args.mail)
