@@ -251,7 +251,7 @@ class Dash(object):
         tnow = int(time.time() * 1000)
         if abs(tnow - end) < 3 * 60 * 1000:   # 3min latest
             if self.drop_result_:
-                slog.debug("drop result from cache, size:{0}".format(self.drop_result_))
+                slog.debug("drop result from cache, size:{0}".format(len(self.drop_result_)))
                 return self.drop_result_
 
         tmp_time = begin
