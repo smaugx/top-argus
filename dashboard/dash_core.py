@@ -87,7 +87,7 @@ class Dash(object):
             self.network_ids_[nid] = ninfo
 
         self.network_ids_['update_timestamp'] = {'update_timestamp': int(time.time() * 1000)}
-        slog.info('read_network_id from db success. {0}'.format(json.dumps(self.network_ids_)))
+        slog.info('read_network_id from db success.')
         return True
 
     def get_network_ids_exp(self, data):
@@ -111,6 +111,7 @@ class Dash(object):
                 if ipinfo.get(ip):
                     self.iplocation_[ip] = ipinfo.get(ip)
                     item['node_country'] = ipinfo.get(ip).get('country_name')
+                    slog.debug('get iplocation of {0} from server'.format(ip))
 
                     with open(self.iplocation_file_, 'w') as fout:
                         fout.write(json.dumps(self.iplocation_))
@@ -156,7 +157,7 @@ class Dash(object):
                         node_size += len(v.get('node_info'))
 
                 result['node_size'] = node_size
-                slog.info('get_network_ids success. {0}'.format(json.dumps(result)))
+                slog.info('get_network_ids success.')
                 return result
             elif data.get('node_id') or data.get('node_ip'):
                 node_ip = data.get('node_ip')
