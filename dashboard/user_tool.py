@@ -61,12 +61,12 @@ def generate_password(user):
         password += c
     return password
 
-def create_all_user_with_file():
+def create_all_user_with_file(filename):
     global user_data_file
 
     user_data_list = []
-    if os.path.exists(user_data_file):
-        with open(user_data_file, 'r') as fin:
+    if os.path.exists(filename):
+        with open(filename, 'r') as fin:
             for line in fin:
                 print(line)
                 if line.startswith('#') or line.startswith('$'):
@@ -82,6 +82,8 @@ def create_all_user_with_file():
                 print('parse username:{0} password:{1}'.format(username, password))
                 user_data_list.append([username, password])
             fin.close()
+    else:
+        print('{0} not exist'.format(filename))
 
     for item in user_data_list:
         print('will create username:{0} password:{1}'.format(item[0], item[1]))
@@ -139,7 +141,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if args.filename:
-        create_all_user_with_file()
+        create_all_user_with_file(args.filename)
         sys.exit(0)
 
     if args.username != None and args.password != None:
