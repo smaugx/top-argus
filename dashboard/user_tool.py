@@ -24,7 +24,7 @@ user_list = [
         'justin',
         'tim',
         'blue',
-        'hench'
+        'hench',
         'aries',
         'evan',
         'rober',
