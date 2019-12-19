@@ -346,6 +346,7 @@ class Dash(object):
 
 
         results.sort(key=get_list_first)
+        self.drop_result_ = results
         '''
         #print(results)
         if results:
