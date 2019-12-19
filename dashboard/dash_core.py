@@ -30,6 +30,13 @@ class Dash(object):
         self.network_ids_ = {}
 
         self.iplocation_ = {}
+        self.iplocation_file_ = '/dev/shm/topargus_iplocation'
+        self.drop_result_ = []
+        
+        if os.path.exists(self.iplocation_file_):
+            with open(self.iplocation_file_, 'r') as fin:
+                self.iplocation_ = json.loads(fin.read())
+                fin.close()
         return
 
     def myconverter(self, o):
@@ -96,7 +103,7 @@ class Dash(object):
         #try:
         for item in result.get('node_info'):
             ip = item.get('node_ip').split(':')[0]
-            '''
+            #'''
             if ip in self.iplocation_:
                 item['node_country'] = self.iplocation_[ip]['country_name']
             else:
@@ -104,13 +111,20 @@ class Dash(object):
                 if ipinfo.get(ip):
                     self.iplocation_[ip] = ipinfo.get(ip)
                     item['node_country'] = ipinfo.get(ip).get('country_name')
+
+                    with open(self.iplocation_file_, 'w') as fout:
+                        fout.write(json.dumps(self.iplocation_))
+                        fout.close()
                 else:
-                    item['node_country'] = '' 
+                    item['node_country'] = 'unknow' 
+            #'''
+
             '''
             country_name_list = ['United States', 'China', 'England', 'Afric','France']
             tmp_country_name = random.choice(country_name_list)
             item['node_country'] = tmp_country_name
             slog.debug('add country {0}'.format(tmp_country_name))
+            '''
 
             result_exp['node_info'].append(item)
         result_exp['node_size'] = len(result_exp['node_info'])
@@ -229,6 +243,14 @@ class Dash(object):
     def get_packet_drop(self, data):
         begin = data.get('begin')  # ms
         end = data.get('end')      # ms
+
+
+        # TODO(smaug) just for test, just for better performance
+        tnow = int(time.time() * 1000)
+        if abs(tnow - end) < 3 * 60 * 1000:   # 3min latest
+            if self.drop_result_:
+                slog.debug("drop result from cache, size:{0}".format(self.drop_result_))
+                return self.drop_result_
 
         tmp_time = begin
 
