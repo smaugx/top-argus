@@ -5,3 +5,4 @@ __pycache__/*
 vvlinux
 /proxy/log
 common/config.py
+dashboard/user.data
