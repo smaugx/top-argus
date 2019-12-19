@@ -30,8 +30,8 @@ class Dash(object):
         self.network_ids_ = {}
 
         self.iplocation_ = {}
-        self.iplocation_file_ = '/dev/shm/topargus_iplocation'
-        self.drop_result_ = []
+        self.iplocation_file_ = '/tmp/.topargus_iplocation'
+        self.drop_result_ = {}  # key is update_timestamp(ms), value  is result
         
         if os.path.exists(self.iplocation_file_):
             with open(self.iplocation_file_, 'r') as fin:
@@ -101,6 +101,8 @@ class Dash(object):
                 'node_size': 0
                 }
         slog.debug('get_network_ids_exp')
+        iplocation_update_flag = False
+        iplocation_load_again = False
         #try:
         for item in result.get('node_info'):
             ip = item.get('node_ip').split(':')[0]
@@ -108,15 +110,19 @@ class Dash(object):
             if ip in self.iplocation_:
                 item['node_country'] = self.iplocation_[ip]['country_name']
             else:
+                if not iplocation_update_flag and os.path.exists(self.iplocation_file_):
+                    with open(self.iplocation_file_, 'r') as fin:
+                        self.iplocation_ = json.loads(fin.read())
+                        iplocation_load_again = True
+                        fin.close()
+                    slog.info('load iplocation from {0}, size:{1}'.format(self.iplocation_file_, len(self.iplocation_.keys())))
+
                 ipinfo = sipinfo.GetIPLocation([ip])
                 if ipinfo.get(ip):
                     self.iplocation_[ip] = ipinfo.get(ip)
                     item['node_country'] = ipinfo.get(ip).get('country_name')
                     slog.debug('get iplocation of {0} from server'.format(ip))
-
-                    with open(self.iplocation_file_, 'w') as fout:
-                        fout.write(json.dumps(self.iplocation_))
-                        fout.close()
+                    iplocation_update_flag = True
                 else:
                     item['node_country'] = 'unknow' 
             #'''
@@ -129,6 +135,12 @@ class Dash(object):
             '''
 
             result_exp['node_info'].append(item)
+
+        if iplocation_update_flag:
+            with open(self.iplocation_file_, 'w') as fout:
+                fout.write(json.dumps(self.iplocation_))
+                fout.close()
+
         result_exp['node_size'] = len(result_exp['node_info'])
         #except Exception as e:
         #    slog.warn('parse ip goes wrong: {0}'.format(e))
@@ -247,12 +259,14 @@ class Dash(object):
         end = data.get('end')      # ms
 
 
+        self.drop_result_ = {}  # key is update_timestamp(ms), value  is result
+
         # TODO(smaug) just for test, just for better performance
+        update_timestamp = self.drop_result_.get('update_timestamp')
         tnow = int(time.time() * 1000)
-        if abs(tnow - end) < 3 * 60 * 1000:   # 3min latest
-            if self.drop_result_:
-                slog.debug("drop result from cache, size:{0}".format(len(self.drop_result_)))
-                return self.drop_result_
+        if update_timestamp and abs(tnow - update_timestamp) < 2 * 60 * 1000 and abs(update_timestamp - end) < 2 * 60 * 1000:
+                slog.debug("drop result from cache, size:{0}".format(len(self.drop_result_.get('result'))))
+                return self.drop_result_.get('result')
 
         tmp_time = begin
 
@@ -346,7 +360,11 @@ class Dash(object):
 
 
         results.sort(key=get_list_first)
-        self.drop_result_ = results
+        self.drop_result_ = {
+                'update_timestamp': tnow,
+                'result': results
+                }
+        
         '''
         #print(results)
         if results:
