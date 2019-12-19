@@ -201,6 +201,10 @@ Highcharts.setOptions({ global: { useUTC: false } });
                 }); // end ajax
             } // end function update_virtual...
 
+function sleep(d){
+  for(var t = Date.now();Date.now() - t <= d;);
+}
+
             function update_real_network(divname) {
                 $.ajax({
                     cache: false,
@@ -245,6 +249,8 @@ Highcharts.setOptions({ global: { useUTC: false } });
                     }
                 }); // end ajax
             } // end function update_real...
+
+
 
 
             function update_drop_rate(divname) {
@@ -344,10 +350,25 @@ Highcharts.setOptions({ global: { useUTC: false } });
                 });
             }
 
+            async function update_real_network_exp(divname) {
+                await update_real_network(divname);
+            }
 
-            update_virtual_network('container1');
-            update_real_network('container2');
-            update_drop_rate('container3');
+            async function update_virtual_network_exp(divname) {
+                await update_virtual_network(divname);
+            }
+
+            async function update_drop_rate_exp(divname) {
+                await update_drop_rate(divname);
+            }
+
+            //update_virtual_network('container1');
+            //update_real_network('container2');
+            //update_drop_rate('container3');
+
+            update_virtual_network_exp('container1');
+            update_drop_rate_exp('container3');
+            update_real_network_exp('container2');
         </script>
     </body>
 
