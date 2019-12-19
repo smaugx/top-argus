@@ -37,6 +37,7 @@ class Dash(object):
             with open(self.iplocation_file_, 'r') as fin:
                 self.iplocation_ = json.loads(fin.read())
                 fin.close()
+            slog.info('load iplocation from {0}, size:{1}'.format(self.iplocation_file_, len(self.iplocation_.keys())))
         return
 
     def myconverter(self, o):
