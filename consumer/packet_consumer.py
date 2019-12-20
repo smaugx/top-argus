@@ -338,7 +338,7 @@ class PacketAlarmConsumer(object):
 
             if (now - send_timestamp) < 5 * 60 * 1000:
                 # keep latest 5 min
-                slog.info("not expired,keep in list, chain_hash: {0} cache size: {1}".format(chain_hash, len(self.packet_info_chain_hash_)))
+                slog.info("not expired,keep in list, cache size: {1}".format(len(self.packet_info_chain_hash_)))
                 break 
 
             #TODO(smaug) store cache_packet_info to db
