@@ -81,8 +81,8 @@ class PacketAlarmConsumer(object):
     def run(self):
         # usually for one consumer , only handle one type
         slog.info('consume_alarm run')
-        #self.consume_alarm_with_notry()
-        self.consume_alarm()
+        self.consume_alarm_with_notry()
+        #self.consume_alarm()
         return
 
     def consume_alarm_with_notry(self):
@@ -116,10 +116,11 @@ class PacketAlarmConsumer(object):
     # focus on packet_info(drop_rate,hop_num,timing)
     def packet_alarm(self, packet_info):
         chain_hash = int(packet_info.get('chain_hash'))
+        slog.info('packet_alarm begin:{0}'.format(json.dumps(packet_info)))
         ptime = int(packet_info.get('recv_timestamp') or packet_info.get('send_timestamp'))
         now = int(time.time() * 1000)
         if (ptime + self.expire_time_ * 60  *1000) < now:
-            slog.info('alarm queue expired: {0} diff:{1} seconds hash:{2}'.format(json.dumps(packet_info), (now - ptime) / 1000), chain_hash)
+            slog.info('alarm queue expired: {0} diff:{1} seconds hash:{2}'.format(json.dumps(packet_info), (now - ptime) / 1000, chain_hash))
             return False
 
         if not packet_info.get('send_timestamp'): # recv info
@@ -147,7 +148,7 @@ class PacketAlarmConsumer(object):
                         if not tmp_packet_info:
                             tmp_remove_recv_chain_hash_list.append(hash_item)
                             continue
-                        tmp_ptime = int(tmp_packet_info[0].get('recv_timestamp'))
+                        tmp_ptime = int(tmp_packet_info[0].get('alarm_content').get('recv_timestamp'))
                         if (tmp_ptime + self.expire_time_ * 60  *1000) < now:
                             tmp_remove_recv_chain_hash_list.append(hash_item)
                             self.packet_recv_info_cache_.pop(hash_item)
@@ -222,6 +223,7 @@ class PacketAlarmConsumer(object):
             hold_recv_list = []
             if chain_hash in self.packet_recv_info_cache_:
                 hold_recv_list = self.packet_recv_info_cache_.pop(chain_hash)
+                self.packet_recv_chain_hash_.remove(chain_hash)
             for item in hold_recv_list:
                 packet_info = item.get('alarm_content')
                 cache_src_node_id = cache_packet_info.get('src_node_id')
@@ -338,7 +340,7 @@ class PacketAlarmConsumer(object):
 
             if (now - send_timestamp) < 5 * 60 * 1000:
                 # keep latest 5 min
-                slog.info("not expired,keep in list, cache size: {1}".format(len(self.packet_info_chain_hash_)))
+                slog.info("not expired,keep in list, cache size: {0}".format(len(self.packet_info_chain_hash_)))
                 break 
 
             #TODO(smaug) store cache_packet_info to db
