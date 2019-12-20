@@ -212,7 +212,9 @@ class PacketAlarmConsumer(object):
             cache_packet_info['is_root'] = int(packet_info.get('is_root'))
             cache_packet_info['broadcast'] = int(packet_info.get('broadcast'))
 
-            networksize = self.get_networksize_from_remote(cache_packet_info['dest_node_id'][:17])  # head 8 * 2 bytes
+            networksize = 1
+            if cache_packet_info.get('broadcast') == 1:
+                networksize = self.get_networksize_from_remote(cache_packet_info['dest_node_id'][:17])  # head 8 * 2 bytes
             cache_packet_info['dest_networksize'] = networksize
 
 
@@ -229,10 +231,6 @@ class PacketAlarmConsumer(object):
                     slog.info("chain_hash confilct")
                     return False
     
-                if packet_info.get('dest_networksize'):
-                    # using earlier dest_networksize
-                    cache_packet_info['dest_networksize'] = packet_info.get('dest_networksize')
-
                 if self.packet_recv_info_flag_:
                     cache_packet_info['recv_nodes_id'].append(packet_info.get('local_node_id'))
                     cache_packet_info['recv_nodes_ip'].append(packet_info.get('public_ip'))
