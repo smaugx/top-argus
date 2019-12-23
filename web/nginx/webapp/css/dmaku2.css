@@ -45,3 +45,27 @@ body{
 .navi_head_main>div>span:hover{
         background:rgba(100,100,100,0.2);
 }
+
+.pie{
+    height:60%;
+}
+
+#container1,
+#container2 {
+    width: 50%;
+    height: 100%;
+    float: left;
+    border-bottom: solid green 1px;
+    border-top: solid green 1px;
+    padding-top: 5px;
+}
+
+
+.line{
+    height:40%;
+}
+
+#container3 {
+    width: 100%;
+    height: 100%;
+}
