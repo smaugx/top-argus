@@ -31,8 +31,8 @@ class NetworkSizeAlarmConsumer(object):
     def run(self):
         # usually for one consumer , only handle one type
         slog.info('consume_alarm run')
-        #self.consume_alarm_with_notry()
-        self.consume_alarm()
+        self.consume_alarm_with_notry()
+        #self.consume_alarm()
         return
 
     def consume_alarm_with_notry(self):
@@ -155,7 +155,7 @@ class NetworkSizeAlarmConsumer(object):
         return False
 
     def progress_alarm(self, content):
-        if not self.progress_alarm(content):
+        if not self.progress_alarm_ent(content):
             return
 
         self.dump_db_networksize()

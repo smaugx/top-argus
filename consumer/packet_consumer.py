@@ -81,8 +81,8 @@ class PacketAlarmConsumer(object):
     def run(self):
         # usually for one consumer , only handle one type
         slog.info('consume_alarm run')
-        #self.consume_alarm_with_notry()
-        self.consume_alarm()
+        self.consume_alarm_with_notry()
+        #self.consume_alarm()
         return
 
     def consume_alarm_with_notry(self):
@@ -115,13 +115,14 @@ class PacketAlarmConsumer(object):
 
     # focus on packet_info(drop_rate,hop_num,timing)
     def packet_alarm(self, packet_info):
+        chain_hash = int(packet_info.get('chain_hash'))
+        slog.info('packet_alarm begin:{0}'.format(json.dumps(packet_info)))
         ptime = int(packet_info.get('recv_timestamp') or packet_info.get('send_timestamp'))
         now = int(time.time() * 1000)
         if (ptime + self.expire_time_ * 60  *1000) < now:
-            slog.info('alarm queue expired: {0} diff:{1} seconds'.format(json.dumps(packet_info), (now - ptime) / 1000))
+            slog.info('alarm queue expired: {0} diff:{1} seconds hash:{2}'.format(json.dumps(packet_info), (now - ptime) / 1000, chain_hash))
             return False
 
-        chain_hash = int(packet_info.get('chain_hash'))
         if not packet_info.get('send_timestamp'): # recv info
             if not self.packet_info_cache_.get(chain_hash):
                 # this is recv info,and befor send info, put it in end of queue again
@@ -137,7 +138,7 @@ class PacketAlarmConsumer(object):
                     self.packet_recv_chain_hash_.append(chain_hash)
 
                 if len(self.packet_recv_info_cache_) < 5000:
-                    slog.info('hold packet_info: {0}, hold size: {1}'.format(json.dumps(packet_info), len(self.packet_recv_info_cache_)))
+                    slog.info('hold packet_info: {0}, hold size: {1} hash:{2}'.format(json.dumps(packet_info), len(self.packet_recv_info_cache_), chain_hash))
                     #time.sleep(0.1)
                     return False 
                 else:
@@ -147,25 +148,22 @@ class PacketAlarmConsumer(object):
                         if not tmp_packet_info:
                             tmp_remove_recv_chain_hash_list.append(hash_item)
                             continue
-                        tmp_ptime = int(tmp_packet_info[0].get('recv_timestamp'))
+                        tmp_ptime = int(tmp_packet_info[0].get('alarm_content').get('recv_timestamp'))
                         if (tmp_ptime + self.expire_time_ * 60  *1000) < now:
                             tmp_remove_recv_chain_hash_list.append(hash_item)
                             self.packet_recv_info_cache_.pop(hash_item)
                     for remove_hash_item in tmp_remove_recv_chain_hash_list:
                         self.packet_recv_chain_hash_.remove(remove_hash_item)
+                        slog.warn('remove hold packet, hash:{0}'.format(remove_hash_item))
                     slog.info('hold packet_info size:{0}'.format(len(self.packet_recv_info_cache_)))
                     return False
             else: #recv info and after send info
                 cache_packet_info = self.packet_info_cache_.get(chain_hash)
                 cache_src_node_id = cache_packet_info.get('src_node_id')
                 if cache_src_node_id != packet_info.get('src_node_id'):
-                    slog.info("chain_hash confilct")
+                    slog.info("chain_hash confilct, hash:{0}".format(chain_hash))
                     return False
     
-                if packet_info.get('dest_networksize'):
-                    # using earlier dest_networksize
-                    cache_packet_info['dest_networksize'] = packet_info.get('dest_networksize')
-
                 if self.packet_recv_info_flag_:
                     cache_packet_info['recv_nodes_id'].append(packet_info.get('local_node_id'))
                     cache_packet_info['recv_nodes_ip'].append(packet_info.get('public_ip'))
@@ -212,27 +210,27 @@ class PacketAlarmConsumer(object):
             cache_packet_info['is_root'] = int(packet_info.get('is_root'))
             cache_packet_info['broadcast'] = int(packet_info.get('broadcast'))
 
-            networksize = self.get_networksize_from_remote(cache_packet_info['dest_node_id'][:17])  # head 8 * 2 bytes
+            networksize = 1
+            if cache_packet_info.get('broadcast') == 1:
+                networksize = self.get_networksize_from_remote(cache_packet_info['dest_node_id'][:17])  # head 8 * 2 bytes
             cache_packet_info['dest_networksize'] = networksize
 
 
             # handle holding recv packet
             if chain_hash in self.packet_recv_info_cache_:
                 slog.debug('handle {0} recv packet'.format(len(self.packet_recv_info_cache_.get(chain_hash))))
+
             hold_recv_list = []
             if chain_hash in self.packet_recv_info_cache_:
                 hold_recv_list = self.packet_recv_info_cache_.pop(chain_hash)
+                self.packet_recv_chain_hash_.remove(chain_hash)
             for item in hold_recv_list:
                 packet_info = item.get('alarm_content')
                 cache_src_node_id = cache_packet_info.get('src_node_id')
                 if cache_src_node_id != packet_info.get('src_node_id'):
-                    slog.info("chain_hash confilct")
+                    slog.info("chain_hash confilct,hash:{0}".format(chain_hash))
                     return False
     
-                if packet_info.get('dest_networksize'):
-                    # using earlier dest_networksize
-                    cache_packet_info['dest_networksize'] = packet_info.get('dest_networksize')
-
                 if self.packet_recv_info_flag_:
                     cache_packet_info['recv_nodes_id'].append(packet_info.get('local_node_id'))
                     cache_packet_info['recv_nodes_ip'].append(packet_info.get('public_ip'))
@@ -329,26 +327,27 @@ class PacketAlarmConsumer(object):
             cache_packet_info = self.packet_info_cache_.get(chain_hash)
             if not cache_packet_info:
                 tmp_remove_chain_hash_list.append(chain_hash)
+                slog.warn("invalid hash:{0}".format(chain_hash))
                 continue
 
             slog.info('in dump_db: chain_hash:{0} recv_nodes:{1}'.format(chain_hash, cache_packet_info.get('recv_nodes_num')))
             send_timestamp = cache_packet_info.get('send_timestamp')
             if now < send_timestamp:
-                slog.info("send_timestamp invalid: {0}".format(send_timestamp))
+                slog.info("send_timestamp invalid: {0} hash:{1}".format(send_timestamp, chain_hash))
                 del self.packet_info_cache_[chain_hash]
                 tmp_remove_chain_hash_list.append(chain_hash)
                 continue
 
             if (now - send_timestamp) < 5 * 60 * 1000:
                 # keep latest 5 min
-                slog.info("not expired,keep in list, chain_hash: {0} cache size: {1}".format(chain_hash, len(self.packet_info_chain_hash_)))
+                slog.info("not expired,keep in list, cache size: {0}".format(len(self.packet_info_chain_hash_)))
                 break 
 
             #TODO(smaug) store cache_packet_info to db
             recv_nodes_id = cache_packet_info.pop('recv_nodes_id')  # store in table: packet_recv_info_table
             recv_nodes_ip = cache_packet_info.pop('recv_nodes_ip')  # store in table: packet_recv_info_table
             if len(recv_nodes_id) != len(recv_nodes_ip):
-                slog.info("recv_nodes_id size:{0} not equal recv_nodes_ip size:{1}".format(len(recv_nodes_id), len(recv_nodes_ip)))
+                slog.info("recv_nodes_id size:{0} not equal recv_nodes_ip size:{1} hash:{2}".format(len(recv_nodes_id), len(recv_nodes_ip), chain_hash))
                 del self.packet_info_cache_[chain_hash]
                 tmp_remove_chain_hash_list.append(chain_hash)
                 continue
