@@ -17,6 +17,7 @@ class PacketInfoSql(Bean):
     #def query(cls,id ,gid , service_name , type  ,name ,priority ,page = 1, limit = 50):
     @classmethod
     def query_from_db(cls,data,page = 1, limit = 50):
+        sbegin = int(time.time() * 1000)
         where ,vs,total = [],[],0
 
         if data.get('id'):
@@ -59,7 +60,8 @@ class PacketInfoSql(Bean):
         #vs = cls.select_vs(where=where, page=page, limit=limit, order=' timestamp desc ')
         vs = cls.select_vs(where=where, page=page, limit=limit, order=' send_timestamp desc ')
         total = cls.total(where = where )
-        slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
+        send = int(time.time() * 1000)
+        slog.debug('select * from %s where %s,total: %s taking:%d ms' % (cls._tbl,where,total,(send - sbegin)))
         return vs, total
 
     @classmethod
@@ -99,6 +101,7 @@ class PacketRecvInfoSql(Bean):
     #def query(cls,id ,gid , service_name , type  ,name ,priority ,page = 1, limit = 50):
     @classmethod
     def query_from_db(cls,data,page = 1, limit = 50):
+        sbegin = int(time.time() * 1000)
         where ,vs,total = [],[],0
 
         if data.get('chain_hash'):
@@ -120,7 +123,8 @@ class PacketRecvInfoSql(Bean):
         vs,total = [],0
         vs = cls.select_vs(where=where, page=page, limit=limit, order='')
         total = cls.total(where = where )
-        slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
+        send = int(time.time() * 1000)
+        slog.debug('select * from %s where %s,total: %s taking:%d ms' % (cls._tbl,where,total, (send - sbegin)))
         return vs, total
 
     @classmethod
@@ -158,6 +162,7 @@ class NetworkInfoSql(Bean):
 
     @classmethod
     def query_from_db(cls,data,page = 1, limit = 50):
+        sbegin = int(time.time() * 1000)
         where ,vs,total = [],[],0
 
         if data.get('network_id'):
@@ -171,7 +176,8 @@ class NetworkInfoSql(Bean):
 
         vs = cls.select_vs(where=where, page=page, limit=limit, order='')
         total = cls.total(where = where )
-        slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
+        send = int(time.time() * 1000)
+        slog.debug('select * from %s where %s,total: %s taking:%d ms' % (cls._tbl,where,total,(send - sbegin)))
         return vs, total
 
     @classmethod
@@ -207,6 +213,7 @@ class DropRateInfoSql(Bean):
 
     @classmethod
     def query_from_db(cls,data,page = 1, limit = 50):
+        sbegin = int(time.time() * 1000)
         where ,vs,total = [],[],0
 
         if data.get('network_id'):
@@ -225,7 +232,8 @@ class DropRateInfoSql(Bean):
         vs,total = [],0
         vs = cls.select_vs(where=where, page=page, limit=limit, order=' timestamp desc')
         total = cls.total(where = where )
-        slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
+        send = int(time.time() * 1000)
+        slog.debug('select * from %s where %s,total: %s taking:%d ms' % (cls._tbl,where,total, (send - sbegin)))
         return vs, total
 
     @classmethod
