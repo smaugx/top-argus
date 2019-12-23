@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
-    
-    <head>
+<html lang="zh-cn">
+<head>
         <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <title>
            TOPARGUS-主网监控系统 
         </title>
@@ -12,19 +12,17 @@
         <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
         <script type="text/javascript" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
         <link rel=stylesheet type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
-         <link rel="stylesheet" type="text/css" href="css/dmaku.css" />
-    </head>
-    
-    <body>
+        <link rel="stylesheet" type="text/css" href="css/dmaku2.css" />
+</head>
 
-<div class="main">
-        <div class="navi_body">
-                <div class="navi_head">
+<body>
+<div>
+        <div class="navi_head">
+                <div class="navi_head_main">
                         <div style="width:80%; margin-left:auto; margin-right:auto;">
                                 <span>
-                    <p class="navi_title"><a href="/index.html">首页</a></p>
+                                        <p class="navi_title"><a href="/index.html">首页</a></p>
                                 </span>
-
                                 <span>
                                         <p class="navi_title"><a href="/packet.html">收包情况</a></p>
                                         <p><a href="/packet.html?dest_node_id=680000">高级网络</a></p>
@@ -34,15 +32,12 @@
                                         <p><a href="/packet.html?dest_node_id=660000">Edge 网络</a></p>
                                         <p><a href="/packet.html?dest_node_id=670000">Archive 网络</a></p>
                                 </span>
-
                                 <span>
                                         <p class="navi_title"><a href="/network.html">P2P网络</a></p>
                                 </span>
-
                                 <span>
                                         <p class="navi_title"><a href="/system.html">系统情况</a></p>
                                 </span>
-
                                 <span>
                                         <p class="navi_title"><a href="/about.html">关于</a></p>
                                 </span>
@@ -50,48 +45,48 @@
                 </div>
         </div>
 
+        <div class="navi_body">
+            <div style="width:100%">
+                <table id="packet_table" class="display" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>chain_hash</th>
+                                <th>chain_type</th>
+                                <th>msg_size</th>
+                                <th>packet_size</th>
+                                <th>recv_nodes</th>
+                                <th>dest_network</th>
+                                <th bgcolor="#ff0000">drop_rate</th>
+                                <th>hop_num</th>
+                                <th>taking</th>
+                                <th>src_node_id</th>
+                                <th>dest_node_id</th>
+                                <th>timestamp</th>
+                            </tr>
+                        </thead>
+                        <tfoot>
+                            <tr>
+                                <th>chain_hash</th>
+                                <th>chain_type</th>
+                                <th>msg_size</th>
+                                <th>packet_size</th>
+                                <th>recv_nodes</th>
+                                <th>dest_network</th>
+                                <th bgcolor="#ff0000">drop_rate</th>
+                                <th>hop_num</th>
+                                <th>taking</th>
+                                <th>src_node_id</th>
+                                <th>dest_node_id</th>
+                                <th>timestamp</th>
+                            </tr>
+                        </tfoot>
+                </table>
 
-    <div class="main_body">
-        <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
-        <table id="packet_table" class="display" style="width:100%">
-                <thead>
-                    <tr>
-                        <th>chain_hash</th>
-                        <th>chain_type</th>
-                        <th>msg_size</th>
-                        <th>packet_size</th>
-                        <th>recv_nodes</th>
-                        <th>dest_network</th>
-                        <th bgcolor="#ff0000">drop_rate</th>
-                        <th>hop_num</th>
-                        <th>taking</th>
-                        <th>src_node_id</th>
-                        <th>dest_node_id</th>
-                        <th>timestamp</th>
-                    </tr>
-                </thead>
-                <tfoot>
-                    <tr>
-                        <th>chain_hash</th>
-                        <th>chain_type</th>
-                        <th>msg_size</th>
-                        <th>packet_size</th>
-                        <th>recv_nodes</th>
-                        <th>dest_network</th>
-                        <th bgcolor="#ff0000">drop_rate</th>
-                        <th>hop_num</th>
-                        <th>taking</th>
-                        <th>src_node_id</th>
-                        <th>dest_node_id</th>
-                        <th>timestamp</th>
-                    </tr>
-                </tfoot>
-        </table>
-    </div>
+            </div>
+
+        </div>
 
 </div>
-
-
 
         <script type="text/javascript">
 
@@ -196,6 +191,8 @@ function getQueryString(name) {
 } ); // end of $(document).ready(function() {
 
         </script>
-    </body>
 
+
+</body>
 </html>
+
