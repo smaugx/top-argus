@@ -31,15 +31,17 @@ def dump_gconfig():
     global gconfig, gconfig_shm_file
     with open(gconfig_shm_file,'w') as fout:
         fout.write(json.dumps(gconfig))
+        slog.info('dump gconfig:{0} to file:{1}'.format(json.dumps(gconfig), gconfig_shm_file))
         fout.close()
     return
 
 def load_gconfig():
-    global gconfig, gconfig_shm_file
+    global gconfig_shm_file
+    new_config = None
     with open(gconfig_shm_file,'r') as fin:
-        gconfig = json.loads(fin.read())
+        new_config = json.loads(fin.read())
         fin.close()
-    return
+    return new_config
 
 dump_gconfig()
 
@@ -56,6 +58,8 @@ def index():
 @app.route('/api/config/', methods=['GET', 'PUT'])
 @app.route('/api/config', methods=['GET', 'PUT'])
 def config_update():
+    alarm_ip = request.headers.get('X-Forwarded-For') or request.headers.get('X-Real-IP') or request.remote_addr
+    slog.info("/api/config clientip:{0} method:{1}".format(alarm_ip, request.method))
     global gconfig
     status_ret = {
             0:'OK',
@@ -65,10 +69,10 @@ def config_update():
             }
     ret = {}
     if request.method == 'GET':
-        alarm_ip = request.headers.get('X-Forwarded-For') or request.headers.get('X-Real-IP') or request.remote_addr
-        alarm_ip = request.remote_addr or request.proxy_add_x_forwarded_for
-        slog.info("update config ip:{0}".format(alarm_ip))
-        load_gconfig()
+        new_config = load_gconfig()
+        if new_config:
+            gconfig = copy.deepcopy(new_config)
+            slog.debug('load gconfig from shm:{0}'.format(json.dumps(gconfig)))
         ret = {'status': 0, 'error': status_ret.get(0), 'config': gconfig, 'ip': alarm_ip}
         return jsonify(ret)
 
