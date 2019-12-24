@@ -109,8 +109,8 @@ class Bean(object):
         return cls._db.query_all(sql )
 
     @classmethod
-    def select_vs(cls, where=None, order=None, limit=None, page=None, offset=None):
-        rows = cls.select(where=where, order=order, limit=limit, page=page, offset=offset)
+    def select_vs(cls, cols = None, where=None, order=None, limit=None, page=None, offset=None):
+        rows = cls.select(cols = cols, where=where, order=order, limit=limit, page=page, offset=offset)
         return rows
 
     @classmethod

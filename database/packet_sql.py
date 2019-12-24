@@ -16,7 +16,8 @@ class PacketInfoSql(Bean):
     #name is something like 'bepo retry';priority is list,different from __init__()
     #def query(cls,id ,gid , service_name , type  ,name ,priority ,page = 1, limit = 50):
     @classmethod
-    def query_from_db(cls,data,page = 1, limit = 50):
+    def query_from_db(cls,data,cols = None, page = 1, limit = 50):
+        sbegin = int(time.time() * 1000)
         where ,vs,total = [],[],0
 
         if data.get('id'):
@@ -56,10 +57,11 @@ class PacketInfoSql(Bean):
 
         where = ' and '.join(where)
         vs,total = [],0
-        #vs = cls.select_vs(where=where, page=page, limit=limit, order=' timestamp desc ')
-        vs = cls.select_vs(where=where, page=page, limit=limit, order=' send_timestamp desc ')
+        #vs = cls.select_vs(cols = cols, where=where, page=page, limit=limit, order=' timestamp desc ')
+        vs = cls.select_vs(cols = cols, where=where, page=page, limit=limit, order=' send_timestamp desc ')
         total = cls.total(where = where )
-        slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
+        send = int(time.time() * 1000)
+        slog.debug('select * from %s where %s,total: %s taking:%d ms' % (cls._tbl,where,total,(send - sbegin)))
         return vs, total
 
     @classmethod
@@ -98,7 +100,8 @@ class PacketRecvInfoSql(Bean):
     #name is something like 'bepo retry';priority is list,different from __init__()
     #def query(cls,id ,gid , service_name , type  ,name ,priority ,page = 1, limit = 50):
     @classmethod
-    def query_from_db(cls,data,page = 1, limit = 50):
+    def query_from_db(cls,data,cols = None, page = 1, limit = 50):
+        sbegin = int(time.time() * 1000)
         where ,vs,total = [],[],0
 
         if data.get('chain_hash'):
@@ -118,9 +121,10 @@ class PacketRecvInfoSql(Bean):
 
         where = ' and '.join(where)
         vs,total = [],0
-        vs = cls.select_vs(where=where, page=page, limit=limit, order='')
+        vs = cls.select_vs(cols = cols, where=where, page=page, limit=limit, order='')
         total = cls.total(where = where )
-        slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
+        send = int(time.time() * 1000)
+        slog.debug('select * from %s where %s,total: %s taking:%d ms' % (cls._tbl,where,total, (send - sbegin)))
         return vs, total
 
     @classmethod
@@ -157,7 +161,8 @@ class NetworkInfoSql(Bean):
         return
 
     @classmethod
-    def query_from_db(cls,data,page = 1, limit = 50):
+    def query_from_db(cls,data,cols = None,page = 1, limit = 50):
+        sbegin = int(time.time() * 1000)
         where ,vs,total = [],[],0
 
         if data.get('network_id'):
@@ -169,9 +174,10 @@ class NetworkInfoSql(Bean):
         where = ' and '.join(where)
         vs,total = [],0
 
-        vs = cls.select_vs(where=where, page=page, limit=limit, order='')
+        vs = cls.select_vs(cols = cols, where=where, page=page, limit=limit, order='')
         total = cls.total(where = where )
-        slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
+        send = int(time.time() * 1000)
+        slog.debug('select * from %s where %s,total: %s taking:%d ms' % (cls._tbl,where,total,(send - sbegin)))
         return vs, total
 
     @classmethod
@@ -206,7 +212,8 @@ class DropRateInfoSql(Bean):
         return
 
     @classmethod
-    def query_from_db(cls,data,page = 1, limit = 50):
+    def query_from_db(cls,data,cols = None, page = 1, limit = 50):
+        sbegin = int(time.time() * 1000)
         where ,vs,total = [],[],0
 
         if data.get('network_id'):
@@ -223,9 +230,10 @@ class DropRateInfoSql(Bean):
 
         where = ' and '.join(where)
         vs,total = [],0
-        vs = cls.select_vs(where=where, page=page, limit=limit, order=' timestamp desc')
+        vs = cls.select_vs(cols = cols, where=where, page=page, limit=limit, order=' timestamp desc')
         total = cls.total(where = where )
-        slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
+        send = int(time.time() * 1000)
+        slog.debug('select * from %s where %s,total: %s taking:%d ms' % (cls._tbl,where,total, (send - sbegin)))
         return vs, total
 
     @classmethod

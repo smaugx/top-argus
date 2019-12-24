@@ -31,7 +31,6 @@ class Dash(object):
 
         self.iplocation_ = {}
         self.iplocation_file_ = '/tmp/.topargus_iplocation'
-        self.drop_result_ = {}  # key is update_timestamp(ms), value  is result
         
         if os.path.exists(self.iplocation_file_):
             with open(self.iplocation_file_, 'r') as fin:
@@ -45,6 +44,7 @@ class Dash(object):
             return o.__str__()
 
     def get_packet_info(self, data, limit = 50, page = 1):
+        tbegin = int(time.time() * 1000)
         vs,total = [],0
         vs,total = self.packet_info_sql.query_from_db(data, page = page, limit = limit)
         if not vs:
@@ -61,6 +61,8 @@ class Dash(object):
                 vs[i]['drop_rate'] = drop_rate
 
 
+        tend = int(time.time() * 1000)
+        slog.debug('get_packet_info taking:{0} ms'.format(tend - tbegin))
         return vs,total
 
     def get_packet_recv_info(self, data, limit = 50, page = 1):
@@ -258,21 +260,10 @@ class Dash(object):
         begin = data.get('begin')  # ms
         end = data.get('end')      # ms
 
-
-        self.drop_result_ = {}  # key is update_timestamp(ms), value  is result
-
-        # TODO(smaug) just for test, just for better performance
-        update_timestamp = self.drop_result_.get('update_timestamp')
-        tnow = int(time.time() * 1000)
-        if update_timestamp and abs(tnow - update_timestamp) < 2 * 60 * 1000 and abs(update_timestamp - end) < 2 * 60 * 1000:
-                slog.debug("drop result from cache, size:{0}".format(len(self.drop_result_.get('result'))))
-                return self.drop_result_.get('result')
-
         tmp_time = begin
-
         time_list = []
         time_drop_map = {}
-        while  tmp_time <= end:
+        while tmp_time <= end:
             tmp_time = tmp_time + 60 * 1000             # 1 min
             time_list.append(tmp_time)
             time_drop_map[tmp_time] = []
@@ -282,41 +273,17 @@ class Dash(object):
         slog.debug('time_list size {0}'.format(len(time_list)))
 
         results = []
-        dest_node_id = data.get('dest_node_id')
-        if not dest_node_id or dest_node_id == None:
-            dest_node_id = "allnet"
-        # try to get from db first
-        drop_vs, drop_total = [], 0
-        drop_query_data =  {
-                "network_id": dest_node_id,
-                "begin": time_list[0],
-                "end": time_list[-1]
-                }
-        drop_vs, drop_total = self.packet_drop_rate_sql.query_from_db(drop_query_data)
-        cache_latest_timestamp = 0
-        if drop_vs:
-            cache_latest_timestamp = int(drop_vs[0].get('timestamp'))
-            slog.info('droprate get {0} form cache_db'.format(len(drop_vs)))
-
-        for item in drop_vs:
-            k = item.get('timestamp')
-            avg_drop_rate = item.get('drop_rate')
-            results.append([k, avg_drop_rate])
-
-        if cache_latest_timestamp != 0:
-            data['begin'] = cache_latest_timestamp
-            slog.info('update begintime {0}'.format(cache_latest_timestamp))
-
         # get packet info from db
         vs,total = [],0
         limit, page = None, None
-        vs,total = self.packet_info_sql.query_from_db(data, limit = limit, page = page)
+        cols = 'chain_hash,send_timestamp,dest_networksize,recv_nodes_num'
+        vs,total = self.packet_info_sql.query_from_db(data, cols = cols, limit = limit, page = page)
         if not vs:
             slog.debug('packet_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
+            return  results
 
-        #slog.info('from db size:{0} {1}'.format(len(vs), json.dumps(vs, indent = 4, default = self.myconverter)))
         for item in vs:
-            del item['timestamp']
+            #chain_hash = item.get('chain_hash')
             dest_networksize = item.get('dest_networksize')
             recv_nodes_num   = item.get('recv_nodes_num')
             if int(dest_networksize) <= 0:
@@ -328,9 +295,7 @@ class Dash(object):
             drop_rate = "%.1f" % drop_rate
             drop_rate = float(drop_rate)
             if recv_nodes_num >= dest_networksize:
-                #slog.warn('recv_nodes_num:{0} beyond dest_networksize:{1}'.format(recv_nodes_num, dest_networksize))
                 drop_rate = 0.0
-            #print('send_timestamp:{0} begin:{1} time_index:{2} recv_nodes_num:{3} dest_networksize:{4} drop_rate:{5}'.format(send_timestamp, begin, time_index, recv_nodes_num, dest_networksize, drop_rate))
 
             if time_index > (len(time_list) - 1):
                 slog.warn('time_index:{0} beyond time_list length:{1}'.format(time_index, len(time_list)))
@@ -351,19 +316,17 @@ class Dash(object):
             avg_drop_rate = float(avg_drop_rate)
             results.append([k, avg_drop_rate])
 
+            '''
             tmp_drop_db_item = {
                     "network_id": dest_node_id,
                     "timestamp": k,
                     "drop_rate": avg_drop_rate
                     }
             self.packet_drop_rate_sql.insert_to_db(tmp_drop_db_item)
+            '''
 
 
         results.sort(key=get_list_first)
-        self.drop_result_ = {
-                'update_timestamp': tnow,
-                'result': results
-                }
         
         '''
         #print(results)
