@@ -44,6 +44,7 @@ class Dash(object):
             return o.__str__()
 
     def get_packet_info(self, data, limit = 50, page = 1):
+        tbegin = int(time.time() * 1000)
         vs,total = [],0
         vs,total = self.packet_info_sql.query_from_db(data, page = page, limit = limit)
         if not vs:
@@ -60,6 +61,8 @@ class Dash(object):
                 vs[i]['drop_rate'] = drop_rate
 
 
+        tend = int(time.time() * 1000)
+        slog.debug('get_packet_info taking:{0} ms'.format(tend - tbegin))
         return vs,total
 
     def get_packet_recv_info(self, data, limit = 50, page = 1):
@@ -313,12 +316,14 @@ class Dash(object):
             avg_drop_rate = float(avg_drop_rate)
             results.append([k, avg_drop_rate])
 
+            '''
             tmp_drop_db_item = {
                     "network_id": dest_node_id,
                     "timestamp": k,
                     "drop_rate": avg_drop_rate
                     }
             self.packet_drop_rate_sql.insert_to_db(tmp_drop_db_item)
+            '''
 
 
         results.sort(key=get_list_first)

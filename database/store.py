@@ -2,6 +2,7 @@
 #import MySQLdb
 import common.config as config
 import pymysql.cursors
+import time
 
 
 topargus_alarm_db_cfg = {
@@ -110,6 +111,7 @@ class DB(object):
         cursor 
 
     def query_all(self, *a, **kw):
+        tnow = int(time.time() * 1000)
         cursor = None
         try:
             cursor = self.execute(*a, **kw)
@@ -117,6 +119,8 @@ class DB(object):
         finally:
             #cursor and cursor.close()
             cursor 
+            tend = int(time.time() * 1000)
+            print('sql taking:{0} ms'.format(tend - tnow))
 
     def query_one(self, *a, **kw):
         rows = self.query_all(*a, **kw)
