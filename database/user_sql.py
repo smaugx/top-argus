@@ -13,7 +13,7 @@ class UserInfoSql(Bean):
         return
 
     @classmethod
-    def query_from_db(cls,data,page = None, limit = None):
+    def query_from_db(cls,data,cols = None, page = None, limit = None):
         where ,vs,total = [],[],0
 
         if data.get('username'):
@@ -23,7 +23,7 @@ class UserInfoSql(Bean):
 
         where = ' and '.join(where)
         vs,total = [],0
-        vs = cls.select_vs(where = where, page = None, limit = None, order = None)
+        vs = cls.select_vs(cols = cols, where = where, page = None, limit = None, order = None)
         total = cls.total(where = where )
         slog.debug('select * from %s where %s,total: %s' % (cls._tbl,where,total))
         return vs, total

@@ -233,7 +233,7 @@ def networkid_query():
 @auth.login_required
 def packet_drop_query():
     now = int(time.time() * 1000)
-    latest_hour = now - 60 * 60 * 1000
+    latest_hour = now - 24 * 60 * 60 * 1000 # 24 hour
     dest_node_id = request.args.get('dest_node_id')     or None
     begin        = request.args.get('begin')            or latest_hour
     end          = request.args.get('end')              or  now
@@ -242,7 +242,7 @@ def packet_drop_query():
         begin = int(begin)
         end = int(end)
         if begin >= end or (end - begin >= 24 * 60 * 60 * 1000 ):
-            begin = end - 60 * 60 * 1000
+            begin = end - 24 * 60 * 60 * 1000
         if end > now or (now - end  > 10 * 24 * 60 * 60 * 1000):
             end = now
             begin = latest_hour
