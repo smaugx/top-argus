@@ -55,6 +55,16 @@ def verify_password(username, password):
 
     if username not in user_info:
         return False
+    if not check_password_hash(user_info.get(username), password):
+        tmp_user_info = myuser.get_user_info()
+        if not tmp_user_info:
+            return False
+        slog.info('update user_info from db:{0}'.format(json.dumps(tmp_user_info)))
+        for item in tmp_user_info:
+            if item.get('username') != username:
+                continue
+            user_info[username] = item.get('password_hash')
+
     return check_password_hash(user_info.get(username), password)
 
 
