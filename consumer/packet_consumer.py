@@ -136,6 +136,7 @@ class PacketAlarmConsumer(object):
                     self.msg_hash_filter_[chain_hash] = {'filter_key': msg_hash_filter_key, 'update_timestamp':now}
                     self.msg_hash_filter_keys_.append(chain_hash)
         if len(self.msg_hash_filter_keys_) > 50000:
+            slog.warn('msg_hash_filter_keys_ size beyond 50000, now is {0}'.format(len(self.msg_hash_filter_keys_)))
             while len(self.msg_hash_filter_keys_) > 0:
                 ex_chain_hash = self.msg_hash_filter_keys_[0]
                 if abs(now - self.msg_hash_filter_.get(ex_chain_hash).get('update_timestamp')) <= (self.expire_time_ + 10) * 60 * 1000:
