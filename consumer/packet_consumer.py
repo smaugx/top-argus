@@ -117,13 +117,18 @@ class PacketAlarmConsumer(object):
 
     # focus on packet_info(drop_rate,hop_num,timing)
     def packet_alarm(self, packet_info):
-        now = int(time.time() * 1000)
+        slog.info('packet_alarm begin:{0}'.format(json.dumps(packet_info)))
         chain_hash = int(packet_info.get('chain_hash'))
+        now = int(time.time() * 1000)
+        ptime = int(packet_info.get('recv_timestamp') or packet_info.get('send_timestamp'))
+        if (ptime + self.expire_time_ * 60  *1000) < now:
+            slog.info('alarm queue expired: {0} diff:{1} seconds hash:{2}'.format(json.dumps(packet_info), (now - ptime) / 1000, chain_hash))
+            return False
 
         # avoid chain_hash conflict in latest 30 min
         msg_hash_filter_key  = '{0}_{1}'.format(chain_hash, packet_info.get('src_node_id')[-6:])
         if chain_hash not in self.msg_hash_filter_:
-            self.msg_hash_filter_[chain_hash] = {'filter_key': msg_hash_filter_key, 'update_timestamp':now}
+            self.msg_hash_filter_[chain_hash] = {'filter_key': msg_hash_filter_key, 'update_timestamp':ptime}
             self.msg_hash_filter_keys_.append(chain_hash)
         else:
             if self.msg_hash_filter_.get(chain_hash).get('filter_key') != msg_hash_filter_key:
@@ -133,7 +138,7 @@ class PacketAlarmConsumer(object):
                     return False
                 else:
                     # using new chain_hash replace(with different src and old is expired)
-                    self.msg_hash_filter_[chain_hash] = {'filter_key': msg_hash_filter_key, 'update_timestamp':now}
+                    self.msg_hash_filter_[chain_hash] = {'filter_key': msg_hash_filter_key, 'update_timestamp':ptime}
                     self.msg_hash_filter_keys_.append(chain_hash)
         if len(self.msg_hash_filter_keys_) > 50000:
             slog.warn('msg_hash_filter_keys_ size beyond 50000, now is {0}'.format(len(self.msg_hash_filter_keys_)))
@@ -143,11 +148,6 @@ class PacketAlarmConsumer(object):
                     break
                 self.msg_hash_filter_keys_.pop(0)  # remote the first element, also is the oldest chain_hash
 
-        slog.info('packet_alarm begin:{0}'.format(json.dumps(packet_info)))
-        ptime = int(packet_info.get('recv_timestamp') or packet_info.get('send_timestamp'))
-        if (ptime + self.expire_time_ * 60  *1000) < now:
-            slog.info('alarm queue expired: {0} diff:{1} seconds hash:{2}'.format(json.dumps(packet_info), (now - ptime) / 1000, chain_hash))
-            return False
 
         if not packet_info.get('send_timestamp'): # recv info
             if not self.packet_info_cache_.get(chain_hash):
