@@ -50,6 +50,7 @@ class Dash(object):
         if not vs:
             slog.debug('packet_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
         for i in range(0, len(vs)):
+            vs[i]['uniq_chain_hash'] = '{0}'.format(vs[i].get('uniq_chain_hash'))
             dest_networksize = int(vs[i].get('dest_networksize'))
             recv_nodes_num   = int(vs[i].get('recv_nodes_num'))
             if dest_networksize <= 0 or recv_nodes_num > dest_networksize:

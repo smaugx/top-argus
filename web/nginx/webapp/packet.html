@@ -152,7 +152,7 @@ function getQueryString(name) {
                                     var new_item = {};
                                     new_item['src_node_id'] = '<a href="/packet.html?dest_node_id='+item['src_node_id']+'">'+ item['src_node_id'].substring(0,7)+"..."+item['src_node_id'].substring(66,72) + '</a>';
                                     new_item['dest_node_id'] = '<a href="/packet.html?dest_node_id='+item['dest_node_id']+'">'+ item['dest_node_id'].substring(0,7)+"..."+item['dest_node_id'].substring(66,72) + '</a>';
-                                    new_item['chain_hash'] = '<a href="/api/web/packet?chain_hash='+item['chain_hash']+'">'+ item['chain_hash'] + '</a>';
+                                    new_item['chain_hash'] = '<a href="/api/web/packet?uniq_chain_hash='+item['uniq_chain_hash']+'">'+ item['chain_hash'] + '</a>';
                                     new_item['chain_type'] = item['chain_msgid'].toString(16);
                                     new_item['msg_size'] = item['chain_msg_size'];
                                     new_item['packet_size'] = item['packet_size'];
