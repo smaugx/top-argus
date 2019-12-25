@@ -79,20 +79,21 @@ def hello_world():
 def index():
     return 'Hello, World!'
 
-# GET /api/web/packet/?chain_hash=8180269&chain_msgid=393217&is_root=0&broadcast=1&send_node_id=010000&src_node_id=660000&dest_node_id=680000
+# GET /api/web/packet/?uniq_chain_hash=73439849340238&chain_hash=8180269&chain_msgid=393217&is_root=0&broadcast=1&send_node_id=010000&src_node_id=660000&dest_node_id=680000
 @app.route('/api/web/packet/', methods = ['GET'])
 @app.route('/api/web/packet', methods = ['GET'])
 @auth.login_required
 def packet_query():
-    chain_hash   = request.args.get('chain_hash')       or None
-    chain_msgid  = request.args.get('chain_msgid')      or None
-    is_root      = request.args.get('is_root')          or None
-    broadcast    = request.args.get('broadcast')        or None
-    send_node_id = request.args.get('send_node_id')     or None
-    src_node_id  = request.args.get('src_node_id')      or None
-    dest_node_id = request.args.get('dest_node_id')     or None
-    limit        = request.args.get('limit')            or 200
-    page         = request.args.get('page')             or 1
+    uniq_chain_hash   = request.args.get('uniq_chain_hash')       or None
+    chain_hash        = request.args.get('chain_hash')            or None
+    chain_msgid       = request.args.get('chain_msgid')           or None
+    is_root           = request.args.get('is_root')               or None
+    broadcast         = request.args.get('broadcast')             or None
+    send_node_id      = request.args.get('send_node_id')          or None
+    src_node_id       = request.args.get('src_node_id')           or None
+    dest_node_id      = request.args.get('dest_node_id')          or None
+    limit             = request.args.get('limit')                 or 200
+    page              = request.args.get('page')                  or 1
 
 
     status_ret = {
@@ -102,6 +103,8 @@ def packet_query():
             }
 
     try:
+        if uniq_chain_hash:
+            uniq_chain_hash = int(uniq_chain_hash)
         if chain_hash:
             chain_hash = int(chain_hash)
         if chain_msgid:
@@ -117,6 +120,7 @@ def packet_query():
 
     
     data = {
+            'uniq_chain_hash': uniq_chain_hash,
             'chain_hash': chain_hash,
             'chain_msgid': chain_msgid,
             'is_root': is_root,
@@ -133,16 +137,20 @@ def packet_query():
         ret = {'status': -1,'error': status_ret.get(-1) , 'results': results, 'total': total}
         return jsonify(ret)
  
-# GET /api/web/packet_recv/?chain_hash=8180269&recv_node_id=01000&recv_node_ip=127.0.0.1
+# GET /api/web/packet_recv/?uniq_chain_hash=4738749342390842903&chain_hash=8180269&recv_node_id=01000&recv_node_ip=127.0.0.1
 @app.route('/api/web/packet_recv/', methods = ['GET'])
 @app.route('/api/web/packet_recv', methods = ['GET'])
 @auth.login_required
 def packet_recv_query():
-    chain_hash   = request.args.get('chain_hash')       or None
-    recv_node_id = request.args.get('recv_node_id')     or None
-    recv_node_ip = request.args.get('recv_node_ip')     or None
-    limit        = request.args.get('limit')            or None
-    page         = request.args.get('page')             or None
+    uniq_chain_hash   = request.args.get('uniq_chain_hash')       or None
+    chain_hash        = request.args.get('chain_hash')            or None
+    recv_node_id      = request.args.get('recv_node_id')          or None
+    recv_node_ip      = request.args.get('recv_node_ip')          or None
+    limit             = request.args.get('limit')                 or None
+    page              = request.args.get('page')                  or None
+
+    if uniq_chain_hash:
+        uniq_chain_hash = int(uniq_chain_hash)
 
     if chain_hash:
         chain_hash = int(chain_hash)
@@ -153,6 +161,7 @@ def packet_recv_query():
             }
 
     data = {
+            'uniq_chain_hash': uniq_chain_hash,
             'chain_hash': chain_hash,
             'recv_node_id': recv_node_id,
             'recv_node_ip': recv_node_ip,

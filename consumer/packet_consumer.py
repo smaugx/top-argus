@@ -12,9 +12,9 @@ from database.packet_sql import PacketInfoSql, PacketRecvInfoSql,NetworkInfoSql
 from common.slogging import slog
 
 
-#{"local_node_id": "010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3", "chain_hash": "4165143189", "chain_msgid": "655361", "chain_msg_size": "9184", "send_timestamp": "1573547749649", "src_node_id": "690000010140ff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716", "dest_node_id": "690000010140ff7fffffffffffffffff000000009aee88245d7e31e7abaab1ac9956d5a0", "is_root": "0", "broadcast": "0"}
+#{"local_node_id": "010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3", "uniq_chain_hash": "416514318958495", "chain_hash": "434300", "chain_msgid": "655361", "chain_msg_size": "9184", "send_timestamp": "1573547749649", "src_node_id": "690000010140ff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716", "dest_node_id": "690000010140ff7fffffffffffffffff000000009aee88245d7e31e7abaab1ac9956d5a0", "is_root": "0", "broadcast": "0"}
 
-#{"local_node_id": "010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3", "chain_hash": "1146587997", "chain_msgid": "917505", "packet_size": "602", "chain_msg_size": "189", "hop_num": "1", "recv_timestamp": "1573547749394", "src_node_id": "010000ffffffffffffffffffffffffff0000000088ae064b2bb22948a2aee8ecd81c08f9", "dest_node_id": "67000000ff7fff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716", "is_root": "0", "broadcast": "0"}
+#{"local_node_id": "010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3", "uniq_chain_hash": "1146587997", "chain_hash":"79385948","chain_msgid": "917505", "packet_size": "602", "chain_msg_size": "189", "hop_num": "1", "recv_timestamp": "1573547749394", "src_node_id": "010000ffffffffffffffffffffffffff0000000088ae064b2bb22948a2aee8ecd81c08f9", "dest_node_id": "67000000ff7fff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716", "is_root": "0", "broadcast": "0"}
 
 class PacketAlarmConsumer(object):
     def __init__(self, q, queue_key_list):
@@ -26,12 +26,10 @@ class PacketAlarmConsumer(object):
 
         self.packet_info_cache_ = {}
         # keep the order of insert
-        self.packet_info_chain_hash_ = []
+        self.packet_info_uniq_chain_hash_ = []
 
         self.packet_recv_info_cache_ = {}  # keep all recv packet befor send packet
-        self.packet_recv_chain_hash_ = []  # keep all recv packet field chain_hash befor send packet  in order
-        self.msg_hash_filter_ = {}  # key is chain_hash, value is {chain_hash+src, update_timestamp:}
-        self.msg_hash_filter_keys_ = []  # keep all self.msg_hash_filter_.keys()
+        self.packet_recv_uniq_chain_hash_ = []  # keep all recv packet field uniq_chain_hash befor send packet  in order
 
         # keep all the node_id of some network_id, key is network_id, value is nodes of this network_id
         # something like {'690000010140ff7f': {'node_info': [{'node_id': xxxx, 'node_ip':127.0.0.1:9000}], 'size':1}}
@@ -48,6 +46,7 @@ class PacketAlarmConsumer(object):
         
         #template of packet_info
         self.template_packet_info_ = {
+                'uniq_chain_hash': 0,
                 'chain_hash': 0,
                 'chain_msgid': 0,
                 'chain_msg_size': 0,
@@ -118,76 +117,52 @@ class PacketAlarmConsumer(object):
     # focus on packet_info(drop_rate,hop_num,timing)
     def packet_alarm(self, packet_info):
         slog.info('packet_alarm begin:{0}'.format(json.dumps(packet_info)))
-        chain_hash = int(packet_info.get('chain_hash'))
+        uniq_chain_hash = int(packet_info.get('uniq_chain_hash'))
         now = int(time.time() * 1000)
         ptime = int(packet_info.get('recv_timestamp') or packet_info.get('send_timestamp'))
         if (ptime + self.expire_time_ * 60  *1000) < now:
-            slog.info('alarm queue expired: {0} diff:{1} seconds hash:{2}'.format(json.dumps(packet_info), (now - ptime) / 1000, chain_hash))
+            slog.info('alarm queue expired: {0} diff:{1} seconds hash:{2}'.format(json.dumps(packet_info), (now - ptime) / 1000, uniq_chain_hash))
             return False
 
-        # avoid chain_hash conflict in latest 30 min
-        msg_hash_filter_key  = '{0}_{1}'.format(chain_hash, packet_info.get('src_node_id')[-6:])
-        if chain_hash not in self.msg_hash_filter_:
-            self.msg_hash_filter_[chain_hash] = {'filter_key': msg_hash_filter_key, 'update_timestamp':ptime}
-            self.msg_hash_filter_keys_.append(chain_hash)
-        else:
-            if self.msg_hash_filter_.get(chain_hash).get('filter_key') != msg_hash_filter_key:
-                if abs(now - self.msg_hash_filter_.get(chain_hash).get('update_timestamp')) < (self.expire_time_ + 10) * 60 * 1000:
-                    # other same chain_hash with different src come, and cache chain_hash is not expired, then ignore this msg
-                    slog.warn('chain_hash conflict in latest 30 mins with different src, old:{0} new:{1}'.format(self.msg_hash_filter_.get(chain_hash).get('filter_key'), msg_hash_filter_key))
-                    return False
-                else:
-                    # using new chain_hash replace(with different src and old is expired)
-                    self.msg_hash_filter_[chain_hash] = {'filter_key': msg_hash_filter_key, 'update_timestamp':ptime}
-                    self.msg_hash_filter_keys_.append(chain_hash)
-        if len(self.msg_hash_filter_keys_) > 50000:
-            slog.warn('msg_hash_filter_keys_ size beyond 50000, now is {0}'.format(len(self.msg_hash_filter_keys_)))
-            while len(self.msg_hash_filter_keys_) > 0:
-                ex_chain_hash = self.msg_hash_filter_keys_[0]
-                if abs(now - self.msg_hash_filter_.get(ex_chain_hash).get('update_timestamp')) <= (self.expire_time_ + 10) * 60 * 1000:
-                    break
-                self.msg_hash_filter_keys_.pop(0)  # remote the first element, also is the oldest chain_hash
-
-
         if not packet_info.get('send_timestamp'): # recv info
-            if not self.packet_info_cache_.get(chain_hash):
+            if not self.packet_info_cache_.get(uniq_chain_hash):
                 # this is recv info,and befor send info, put it in end of queue again
                 tmp_alarm_payload = {
                         'alarm_type': 'packet',
                         'alarm_content': packet_info,
                         }
 
-                if self.packet_recv_info_cache_.get(chain_hash):
-                    self.packet_recv_info_cache_[chain_hash].append(tmp_alarm_payload)
+                if self.packet_recv_info_cache_.get(uniq_chain_hash):
+                    self.packet_recv_info_cache_[uniq_chain_hash].append(tmp_alarm_payload)
                 else:
-                    self.packet_recv_info_cache_[chain_hash] = [tmp_alarm_payload]
-                    self.packet_recv_chain_hash_.append(chain_hash)
+                    self.packet_recv_info_cache_[uniq_chain_hash] = [tmp_alarm_payload]
+                    self.packet_recv_uniq_chain_hash_.append(uniq_chain_hash)
 
                 if len(self.packet_recv_info_cache_) < 5000:
-                    slog.info('hold packet_info: {0}, hold size: {1} hash:{2}'.format(json.dumps(packet_info), len(self.packet_recv_info_cache_), chain_hash))
+                    slog.info('hold packet_info: {0}, hold size: {1} hash:{2}'.format(json.dumps(packet_info), len(self.packet_recv_info_cache_), uniq_chain_hash))
                     #time.sleep(0.1)
                     return False 
                 else:
-                    tmp_remove_recv_chain_hash_list = []
-                    for hash_item in self.packet_recv_chain_hash_:
+                    tmp_remove_recv_uniq_chain_hash_list = []
+                    for hash_item in self.packet_recv_uniq_chain_hash_:
                         tmp_packet_info = self.packet_recv_info_cache_.get(hash_item)
                         if not tmp_packet_info:
-                            tmp_remove_recv_chain_hash_list.append(hash_item)
+                            tmp_remove_recv_uniq_chain_hash_list.append(hash_item)
                             continue
                         tmp_ptime = int(tmp_packet_info[0].get('alarm_content').get('recv_timestamp'))
                         if (tmp_ptime + self.expire_time_ * 60  *1000) < now:
-                            tmp_remove_recv_chain_hash_list.append(hash_item)
+                            tmp_remove_recv_uniq_chain_hash_list.append(hash_item)
                             self.packet_recv_info_cache_.pop(hash_item)
-                    for remove_hash_item in tmp_remove_recv_chain_hash_list:
-                        self.packet_recv_chain_hash_.remove(remove_hash_item)
+                    for remove_hash_item in tmp_remove_recv_uniq_chain_hash_list:
+                        self.packet_recv_uniq_chain_hash_.remove(remove_hash_item)
                         slog.warn('remove hold packet, hash:{0}'.format(remove_hash_item))
                     slog.info('hold packet_info size:{0}'.format(len(self.packet_recv_info_cache_)))
                     return False
             else: #recv info and after send info
-                cache_packet_info = self.packet_info_cache_.get(chain_hash)
+                cache_packet_info = self.packet_info_cache_.get(uniq_chain_hash)
                 cache_src_node_id = cache_packet_info.get('src_node_id')
                 if cache_src_node_id != packet_info.get('src_node_id'):
-                    slog.info("chain_hash conflict, hash:{0}".format(chain_hash))
+                    slog.info("uniq_chain_hash conflict, hash:{0}".format(uniq_chain_hash))
                     return False
     
                 if self.packet_recv_info_flag_:
@@ -221,12 +196,13 @@ class PacketAlarmConsumer(object):
                     cache_packet_info['taking']['2.0_'] += 1
     
                 # update packet_info
-                slog.info("update packet_info: chain_hash:{0} recv_nodes:{1}".format(cache_packet_info.get('chain_hash'), cache_packet_info.get('recv_nodes_num')))
-                self.packet_info_cache_[chain_hash] = cache_packet_info
+                slog.info("update packet_info: uniq_chain_hash:{0} recv_nodes:{1}".format(cache_packet_info.get('uniq_chain_hash'), cache_packet_info.get('recv_nodes_num')))
+                self.packet_info_cache_[uniq_chain_hash] = cache_packet_info
     
         else:  # this is send info
             cache_packet_info =  copy.deepcopy(self.template_packet_info_)
             cache_packet_info['send_node_id'] = packet_info.get('local_node_id')
+            cache_packet_info['uniq_chain_hash'] = int(packet_info.get('uniq_chain_hash'))
             cache_packet_info['chain_hash'] = int(packet_info.get('chain_hash'))
             cache_packet_info['chain_msgid'] = int(packet_info.get('chain_msgid'))
             cache_packet_info['chain_msg_size'] = int(packet_info.get('chain_msg_size'))
@@ -243,18 +219,18 @@ class PacketAlarmConsumer(object):
 
 
             # handle holding recv packet
-            if chain_hash in self.packet_recv_info_cache_:
-                slog.debug('handle {0} recv packet'.format(len(self.packet_recv_info_cache_.get(chain_hash))))
+            if uniq_chain_hash in self.packet_recv_info_cache_:
+                slog.debug('handle {0} recv packet'.format(len(self.packet_recv_info_cache_.get(uniq_chain_hash))))
 
             hold_recv_list = []
-            if chain_hash in self.packet_recv_info_cache_:
-                hold_recv_list = self.packet_recv_info_cache_.pop(chain_hash)
-                self.packet_recv_chain_hash_.remove(chain_hash)
+            if uniq_chain_hash in self.packet_recv_info_cache_:
+                hold_recv_list = self.packet_recv_info_cache_.pop(uniq_chain_hash)
+                self.packet_recv_uniq_chain_hash_.remove(uniq_chain_hash)
             for item in hold_recv_list:
                 packet_info = item.get('alarm_content')
                 cache_src_node_id = cache_packet_info.get('src_node_id')
                 if cache_src_node_id != packet_info.get('src_node_id'):
-                    slog.info("chain_hash conflict,hash:{0}".format(chain_hash))
+                    slog.info("uniq_chain_hash conflict,hash:{0}".format(uniq_chain_hash))
                     return False
     
                 if self.packet_recv_info_flag_:
@@ -289,8 +265,8 @@ class PacketAlarmConsumer(object):
     
             # insert to cache
             slog.info("insert packet_info:{0}".format(json.dumps(cache_packet_info)))
-            self.packet_info_cache_[chain_hash] = cache_packet_info
-            self.packet_info_chain_hash_.append(chain_hash)
+            self.packet_info_cache_[uniq_chain_hash] = cache_packet_info
+            self.packet_info_uniq_chain_hash_.append(uniq_chain_hash)
 
         self.dump_db_packetinfo()
         return True
@@ -343,49 +319,49 @@ class PacketAlarmConsumer(object):
     def dump_db_packetinfo(self):
         # packet_info (drop,hop,time...)
         slog.info("dump packet_info to db")
-        if len(self.packet_info_chain_hash_) < 100:
-            slog.info('packet cache size:{0} less then 100, will not dump to db'.format(len(self.packet_info_chain_hash_)))
+        if len(self.packet_info_uniq_chain_hash_) < 100:
+            slog.info('packet cache size:{0} less then 100, will not dump to db'.format(len(self.packet_info_uniq_chain_hash_)))
             return
         now = int(time.time() * 1000)
-        tmp_remove_chain_hash_list = []  # keep ready to remove chain_hash
-        slog.info("chain_hash size: {0}".format(len(self.packet_info_chain_hash_)))
-        for chain_hash in self.packet_info_chain_hash_:
-            cache_packet_info = self.packet_info_cache_.get(chain_hash)
+        tmp_remove_uniq_chain_hash_list = []  # keep ready to remove uniq_chain_hash
+        slog.info("uniq_chain_hash size: {0}".format(len(self.packet_info_uniq_chain_hash_)))
+        for uniq_chain_hash in self.packet_info_uniq_chain_hash_:
+            cache_packet_info = self.packet_info_cache_.get(uniq_chain_hash)
             if not cache_packet_info:
-                tmp_remove_chain_hash_list.append(chain_hash)
-                slog.warn("invalid hash:{0}".format(chain_hash))
+                tmp_remove_uniq_chain_hash_list.append(uniq_chain_hash)
+                slog.warn("invalid hash:{0}".format(uniq_chain_hash))
                 continue
 
-            slog.info('in dump_db: chain_hash:{0} recv_nodes:{1}'.format(chain_hash, cache_packet_info.get('recv_nodes_num')))
+            slog.info('in dump_db: uniq_chain_hash:{0} recv_nodes:{1}'.format(uniq_chain_hash, cache_packet_info.get('recv_nodes_num')))
             send_timestamp = cache_packet_info.get('send_timestamp')
             if now < send_timestamp:
-                slog.info("send_timestamp invalid: {0} hash:{1}".format(send_timestamp, chain_hash))
-                del self.packet_info_cache_[chain_hash]
-                tmp_remove_chain_hash_list.append(chain_hash)
+                slog.info("send_timestamp invalid: {0} hash:{1}".format(send_timestamp, uniq_chain_hash))
+                del self.packet_info_cache_[uniq_chain_hash]
+                tmp_remove_uniq_chain_hash_list.append(uniq_chain_hash)
                 continue
 
             if (now - send_timestamp) < 5 * 60 * 1000:
                 # keep latest 5 min
-                slog.info("not expired,keep in list, cache size: {0}".format(len(self.packet_info_chain_hash_)))
+                slog.info("not expired,keep in list, cache size: {0}".format(len(self.packet_info_uniq_chain_hash_)))
                 break 
 
             #TODO(smaug) store cache_packet_info to db
             recv_nodes_id = cache_packet_info.pop('recv_nodes_id')  # store in table: packet_recv_info_table
             recv_nodes_ip = cache_packet_info.pop('recv_nodes_ip')  # store in table: packet_recv_info_table
             if len(recv_nodes_id) != len(recv_nodes_ip):
-                slog.info("recv_nodes_id size:{0} not equal recv_nodes_ip size:{1} hash:{2}".format(len(recv_nodes_id), len(recv_nodes_ip), chain_hash))
-                del self.packet_info_cache_[chain_hash]
-                tmp_remove_chain_hash_list.append(chain_hash)
+                slog.info("recv_nodes_id size:{0} not equal recv_nodes_ip size:{1} hash:{2}".format(len(recv_nodes_id), len(recv_nodes_ip), uniq_chain_hash))
+                del self.packet_info_cache_[uniq_chain_hash]
+                tmp_remove_uniq_chain_hash_list.append(uniq_chain_hash)
                 continue
 
             if self.packet_recv_info_flag_:
                 for nid,nip in zip(recv_nodes_id, recv_nodes_ip):
                     tmp_db_data = {
-                            'chain_hash': chain_hash,
+                            'uniq_chain_hash': uniq_chain_hash,
                             'recv_node_id': nid,
                             'recv_node_ip': nip
                             }
-                    slog.info('ready dump to db of chain_hash recv_node:{0}'.format(json.dumps(tmp_db_data)))
+                    slog.info('ready dump to db of uniq_chain_hash recv_node:{0}'.format(json.dumps(tmp_db_data)))
                     self.packet_recv_info_sql.insert_to_db(tmp_db_data)
 
             '''
@@ -406,15 +382,15 @@ class PacketAlarmConsumer(object):
                 str_taking += ','
             cache_packet_info['taking'] = str_taking
 
-            slog.info('ready dump to db of chain_hash:{0}'.format(json.dumps(cache_packet_info)))
-            self.packet_info_sql.insert_to_db(cache_packet_info)
+            slog.info('ready dump to db of uniq_chain_hash:{0}'.format(json.dumps(cache_packet_info)))
+            self.packet_info_sql.update_insert_to_db(cache_packet_info)
 
-            # erase chain_hash of this packet_info from cache
-            del self.packet_info_cache_[chain_hash]
-            tmp_remove_chain_hash_list.append(chain_hash)
+            # erase uniq_chain_hash of this packet_info from cache
+            del self.packet_info_cache_[uniq_chain_hash]
+            tmp_remove_uniq_chain_hash_list.append(uniq_chain_hash)
 
-        for chain_hash in tmp_remove_chain_hash_list:
+        for uniq_chain_hash in tmp_remove_uniq_chain_hash_list:
             # remove from list
-            self.packet_info_chain_hash_.remove(chain_hash)
+            self.packet_info_uniq_chain_hash_.remove(uniq_chain_hash)
 
         return

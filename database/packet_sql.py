@@ -6,7 +6,7 @@ from common.slogging import slog
 
 class PacketInfoSql(Bean):
     _tbl = 'packet_info_table'  #所有发包收包信息发在一个表中
-    _cols = 'id,chain_hash,chain_msgid,chain_msg_size,packet_size,send_timestamp,is_root,broadcast,send_node_id,src_node_id,dest_node_id,dest_networksize,recv_nodes_num,hop_num,taking,timestamp'
+    _cols = 'uniq_chain_hash,chain_hash,chain_msgid,chain_msg_size,packet_size,send_timestamp,is_root,broadcast,send_node_id,src_node_id,dest_node_id,dest_networksize,recv_nodes_num,hop_num,taking,timestamp'
 
     def __init__(self):
         slog.info('PacketInfoSql init')
@@ -20,8 +20,8 @@ class PacketInfoSql(Bean):
         sbegin = int(time.time() * 1000)
         where ,vs,total = [],[],0
 
-        if data.get('id'):
-            where.append(' `id` = "{0}" '.format(data.get('id')))
+        if data.get('uniq_chain_hash'):
+            where.append(' uniq_chain_hash = {0} '.format(data.get('uniq_chain_hash')))
 
         if data.get('chain_hash'):
             where.append(' chain_hash = {0} '.format(data.get('chain_hash')))
@@ -91,7 +91,7 @@ class PacketInfoSql(Bean):
 # store packet recv node_id and ip
 class PacketRecvInfoSql(Bean):
     _tbl = 'packet_recv_info_table'  #所有发包收包信息发在一个表中
-    _cols = 'chain_hash,recv_node_id,recv_node_ip'
+    _cols = 'uniq_chain_hash,recv_node_id,recv_node_ip'
 
     def __init__(self):
         return
@@ -104,8 +104,8 @@ class PacketRecvInfoSql(Bean):
         sbegin = int(time.time() * 1000)
         where ,vs,total = [],[],0
 
-        if data.get('chain_hash'):
-            where.append(' chain_hash = {0} '.format(data.get('chain_hash')))
+        if data.get('uniq_chain_hash'):
+            where.append(' uniq_chain_hash = {0} '.format(data.get('uniq_chain_hash')))
 
         if data.get('recv_node_id'):
             if len(data.get('recv_node_id')) <= 10:

@@ -72,7 +72,7 @@ class RedisQueue(object):
         alarm_type = alarm_item.get('alarm_type')
         msg_hash = None
         if alarm_type == 'packet':
-            msg_hash = int(alarm_item.get('alarm_content').get('chain_hash'))
+            msg_hash = int(alarm_item.get('alarm_content').get('uniq_chain_hash'))
         elif alarm_type == 'networksize' or alarm_type == 'progress':
             node_id = alarm_item.get('alarm_content').get('node_id') 
             network_id = node_id[:17]  # head 8 * 2 bytes
@@ -111,7 +111,7 @@ class RedisQueue(object):
     def put_queue(self, item):
         if not isinstance(item, dict):
             return
-        # TODO(smaug) for packet using chain_hash; other type using other hash
+        # TODO(smaug) for packet using uniq_chain_hash; other type using other hash
 
         qkey = self.get_queue_key_of_alarm(item)
         # item is dict, serialize to str

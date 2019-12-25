@@ -276,14 +276,14 @@ class Dash(object):
         # get packet info from db
         vs,total = [],0
         limit, page = None, None
-        cols = 'chain_hash,send_timestamp,dest_networksize,recv_nodes_num'
+        cols = 'uniq_chain_hash,send_timestamp,dest_networksize,recv_nodes_num'
         vs,total = self.packet_info_sql.query_from_db(data, cols = cols, limit = limit, page = page)
         if not vs:
             slog.debug('packet_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
             return  results
 
         for item in vs:
-            #chain_hash = item.get('chain_hash')
+            #uniq_chain_hash = item.get('uniq_chain_hash')
             dest_networksize = item.get('dest_networksize')
             recv_nodes_num   = item.get('recv_nodes_num')
             if int(dest_networksize) <= 0:
