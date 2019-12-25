@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS packet_info_table(
                 hop_num VARCHAR(255) DEFAULT "",
                 taking VARCHAR(255) DEFAULT "",
                 timestamp Timestamp NOT NULL,
-                PRIMARY KEY (chain_hash),
-                INDEX (send_node_id,send_timestamp)
+                PRIMARY KEY (id),
+                INDEX (chain_hash, send_node_id,send_timestamp)
 )
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;
