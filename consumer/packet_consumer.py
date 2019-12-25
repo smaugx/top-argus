@@ -129,7 +129,7 @@ class PacketAlarmConsumer(object):
             if self.msg_hash_filter_.get(chain_hash).get('filter_key') != msg_hash_filter_key:
                 if abs(now - self.msg_hash_filter_.get(chain_hash).get('update_timestamp')) < (self.expire_time_ + 10) * 60 * 1000:
                     # other same chain_hash with different src come, and cache chain_hash is not expired, then ignore this msg
-                    slog.warn('chain_hash conflict in latest 30 mins with different src')
+                    slog.warn('chain_hash conflict in latest 30 mins with different src, old:{0} new:{1}'.format(self.msg_hash_filter_.get(chain_hash).get('filter_key'), msg_hash_filter_key))
                     return False
                 else:
                     # using new chain_hash replace(with different src and old is expired)
@@ -186,7 +186,7 @@ class PacketAlarmConsumer(object):
                 cache_packet_info = self.packet_info_cache_.get(chain_hash)
                 cache_src_node_id = cache_packet_info.get('src_node_id')
                 if cache_src_node_id != packet_info.get('src_node_id'):
-                    slog.info("chain_hash confilct, hash:{0}".format(chain_hash))
+                    slog.info("chain_hash conflict, hash:{0}".format(chain_hash))
                     return False
     
                 if self.packet_recv_info_flag_:
@@ -253,7 +253,7 @@ class PacketAlarmConsumer(object):
                 packet_info = item.get('alarm_content')
                 cache_src_node_id = cache_packet_info.get('src_node_id')
                 if cache_src_node_id != packet_info.get('src_node_id'):
-                    slog.info("chain_hash confilct,hash:{0}".format(chain_hash))
+                    slog.info("chain_hash conflict,hash:{0}".format(chain_hash))
                     return False
     
                 if self.packet_recv_info_flag_:
