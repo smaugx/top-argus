@@ -10,7 +10,7 @@ SET NAMES utf8;
 /* 所有发包收包信息统计*/
 DROP TABLE IF EXISTS packet_info_table;
 CREATE TABLE IF NOT EXISTS packet_info_table(
-                uniq_chain_hash INT(20) unsigned NOT NULL,
+                uniq_chain_hash BIGINT(20) unsigned NOT NULL,
                 chain_hash INT(10) unsigned NOT NULL,
                 chain_msgid INT(10) unsigned NOT NULL,
                 chain_msg_size INT(10) unsigned DEFAULT 0,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS packet_info_table(
 /* 每一个包对应的收包信息（主要是收包节点ID以及IP)*/
 DROP TABLE IF EXISTS packet_recv_info_table;
 CREATE TABLE IF NOT EXISTS packet_recv_info_table(
-                uniq_chain_hash INT(20) unsigned NOT NULL,
+                uniq_chain_hash BIGINT(20) unsigned NOT NULL,
                 recv_node_id VARCHAR(73) DEFAULT "",
                 recv_node_ip VARCHAR(20) DEFAULT "",
                 INDEX (uniq_chain_hash)
