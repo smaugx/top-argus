@@ -258,3 +258,122 @@ class DropRateInfoSql(Bean):
         print('update table network_info_table: %s where:%s' % (json.dumps(data),where))
         return cls.update_dict(data = data, where = where )
 
+
+# store node_info 
+class NodeInfoSql(Bean):
+    _tbl = 'node_info_table'
+    _cols = 'public_ip_port,root,rec,zec,edg,arc,adv,val'
+
+    def __init__(self):
+        return
+
+    @classmethod
+    def query_from_db(cls,data,cols = None,page = 1, limit = 50):
+        sbegin = int(time.time() * 1000)
+        where ,vs,total = [],[],0
+
+        if data.get('public_ip_port'):
+            where.append(' `public_ip_port` = "{0}" '.format(data.get('public_ip_port')))
+        if data.get('root'):
+            if len(data.get('root')) <= 20:
+                where.append(' `root` regexp "{0}" '.format(data.get('root')))
+            else:
+                where.append(' `root` = "{0}" '.format(data.get('root')))
+
+        where = ' and '.join(where)
+        vs,total = [],0
+
+        vs = cls.select_vs(cols = cols, where=where, page=page, limit=limit, order='')
+        total = cls.total(where = where )
+        send = int(time.time() * 1000)
+        slog.debug('select * from %s where %s,total: %s taking:%d ms' % (cls._tbl,where,total,(send - sbegin)))
+        return vs, total
+
+    @classmethod
+    def ignore_insert_to_db(cls,data):
+        return cls.ignore_insert(data = data)
+
+    @classmethod
+    def update_insert_to_db(cls,data):
+        return cls.update_insert(data = data)
+
+    @classmethod
+    def insert_to_db(cls,data):
+        return cls.insert(data = data)
+    
+    @classmethod
+    def update_incry(cls,clause):
+        print('update table %s: %s ' % (cls._tbl,clause))
+        return cls.update(clause = clause)
+
+    @classmethod
+    def update_case(cls,data=None, where=''):
+        print('update table node_info_table: %s where:%s' % (json.dumps(data),where))
+        return cls.update_dict(data = data, where = where )
+
+# store system_alarm_info 
+class SystemAlarmInfoSql(Bean):
+    _tbl = 'system_alarm_info_table'
+    _cols = 'id,priority,public_ip_port,root,alarm_info,send_timestamp'
+
+    def __init__(self):
+        return
+
+    @classmethod
+    def query_from_db(cls,data,cols = None,page = 1, limit = 50):
+        sbegin = int(time.time() * 1000)
+        where ,vs,total = [],[],0
+
+        if data.get('public_ip_port'):
+            where.append(' `public_ip_port` = "{0}" '.format(data.get('public_ip_port')))
+        if data.get('root'):
+            if len(data.get('root')) <= 20:
+                where.append(' `root` regexp "{0}" '.format(data.get('root')))
+            else:
+                where.append(' `root` = "{0}" '.format(data.get('root')))
+        if data.get('priority'): # list of priority, eg: [0,1,3]
+            wp = []
+            for p in data.get('priority'):
+                wp.append(' `priority` = "{0}" '.format(p))
+            wp = ' or '.join(wp)
+            if wp:
+                wp = ' ( {0} ) '.format(wp)
+                where.append(wp)
+
+        if data.get('begin'):
+            where.append(' `send_timestamp` >= {0} '.format(data.get('begin')))
+        if data.get('end'):
+            where.append(' `send_timestamp` <= {0} '.format(data.get('end')))
+
+        where = ' and '.join(where)
+        vs,total = [],0
+
+        vs = cls.select_vs(cols = cols, where=where, page=page, limit=limit, order=' send_timestamp desc ')
+        total = cls.total(where = where )
+        send = int(time.time() * 1000)
+        slog.debug('select * from %s where %s,total: %s taking:%d ms' % (cls._tbl,where,total,(send - sbegin)))
+        return vs, total
+
+    @classmethod
+    def ignore_insert_to_db(cls,data):
+        return cls.ignore_insert(data = data)
+
+    @classmethod
+    def update_insert_to_db(cls,data):
+        return cls.update_insert(data = data)
+
+    @classmethod
+    def insert_to_db(cls,data):
+        return cls.insert(data = data)
+    
+    @classmethod
+    def update_incry(cls,clause):
+        print('update table %s: %s ' % (cls._tbl,clause))
+        return cls.update(clause = clause)
+
+    @classmethod
+    def update_case(cls,data=None, where=''):
+        print('update table system_alarm_info_table: %s where:%s' % (json.dumps(data),where))
+        return cls.update_dict(data = data, where = where )
+
+

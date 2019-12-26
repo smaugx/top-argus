@@ -76,3 +76,53 @@ CREATE TABLE IF NOT EXISTS user_info_table(
 )
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;
+
+/* 节点信息*/
+DROP TABLE IF EXISTS node_info_table;
+CREATE TABLE IF NOT EXISTS node_info_table(
+                public_ip_port VARCHAR(25) NOT NULL,
+                root VARCHAR(73) DEFAULT "", 
+                rec  VARCHAR(1000) DEFAULT "",
+                zec  VARCHAR(1000) DEFAULT "",
+                edg  VARCHAR(1000) DEFAULT "",
+                arc  VARCHAR(1000) DEFAULT "",
+                adv  VARCHAR(1000) DEFAULT "",
+                val  VARCHAR(1000) DEFAULT "",
+                PRIMARY KEY (public_ip_port),
+                INDEX (root_node_id)
+)
+        ENGINE =InnoDB
+        DEFAULT CHARSET =utf8;
+
+/* 系统事件，具有比较高的优先级的事件*/
+DROP TABLE IF EXISTS system_alarm_info_table;
+CREATE TABLE IF NOT EXISTS system_alarm_info_table(
+                id INT(10) unsigned NOT NULL AUTO_INCREMENT,
+                priority  INT(10)  unsigned DEFAULT 0,   /* priority high with high value */
+                public_ip_port VARCHAR(25) NOT NULL, 
+                root VARCHAR(73) DEFAULT "", 
+                alarm_info VARCHAR(1000) DEFAULT "",
+                send_timestamp bigint(20) unsigned DEFAULT 0,
+                PRIMARY KEY (id),
+                INDEX (root_node_id, public_ip_port, send_timestamp)
+)
+        ENGINE =InnoDB
+        DEFAULT CHARSET =utf8;
+
+/* 系统定时采集信息, 比如 cpu/bandwidth 等*/
+DROP TABLE IF EXISTS system_cron_info_table;
+CREATE TABLE IF NOT EXISTS system_cron_info_table(
+                id INT(10) unsigned NOT NULL AUTO_INCREMENT,
+                public_ip_port VARCHAR(25) NOT NULL,
+                cpu INT(10)  unsigned DEFAULT 0,
+                bandwidth INT(10)  unsigned DEFAULT 0,  /* Kb/s */
+                send_packet INT(10)  unsigned DEFAULT 0,
+                recv_packet INT(10)  unsigned DEFAULT 0,
+                send_timestamp bigint(20) unsigned DEFAULT 0,
+                PRIMARY KEY (id),
+                INDEX (public_ip_port,send_timestamp)
+)
+        ENGINE =InnoDB
+        DEFAULT CHARSET =utf8;
+
+
