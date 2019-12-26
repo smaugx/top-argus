@@ -6,7 +6,7 @@ if [ ! $1 ]; then
   exit
 else
   echo "param is:" $1
-  nohup python main_consumer.py -t $1 > /dev/null & 2>&1
+  nohup python main_consumer.py -t $1  -e docker > /dev/null & 2>&1
 fi
 
 

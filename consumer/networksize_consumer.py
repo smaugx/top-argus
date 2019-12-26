@@ -18,8 +18,9 @@ PRIORITY_DICT = {
         }
 
 class NetworkSizeAlarmConsumer(object):
-    def __init__(self, q, queue_key_list):
+    def __init__(self, q, queue_key_list, alarm_env = 'test'):
         slog.info("networksize alarmconsumer init. pid:{0} paraent:{1} queue_key:{2}".format(os.getpid(), os.getppid(), json.dumps(queue_key_list)))
+        self.alarm_env_ = alarm_env
         # keep all the node_id of some network_id, key is network_id, value is nodes of this network_id
         # something like {'690000010140ff7f': {'node_info': [{'node_id': xxxx, 'node_ip':127.0.0.1:9000}], 'size':1}}
         self.network_ids_ = {}
@@ -44,8 +45,10 @@ class NetworkSizeAlarmConsumer(object):
     def run(self):
         # usually for one consumer , only handle one type
         slog.info('consume_alarm run')
-        self.consume_alarm_with_notry()
-        #self.consume_alarm()
+        if self.alarm_env_ == 'test':
+            self.consume_alarm_with_notry()
+        else:
+            self.consume_alarm()
         return
 
     def consume_alarm_with_notry(self):

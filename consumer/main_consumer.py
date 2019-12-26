@@ -22,7 +22,7 @@ import packet_consumer
 
 mq = my_queue.RedisQueue(host= sconfig.REDIS_HOST, port=sconfig.REDIS_PORT, password=sconfig.REDIS_PASS)
 
-def run(alarm_type):
+def run(alarm_type, alarm_env = 'test'):
     global mq
     all_queue_key = mq.get_all_queue_keys()  # set of queue_key
     qkey_map = {
@@ -46,23 +46,15 @@ def run(alarm_type):
         # packet
         for qkey in qkey_map.get('packet'):
             slog.warn('create consumer for packet, assign queue_key:{0}'.format(qkey))
-            consumer = packet_consumer.PacketAlarmConsumer(q=mq, queue_key_list = [qkey])
+            consumer = packet_consumer.PacketAlarmConsumer(q=mq, queue_key_list = [qkey], alarm_env = alarm_env)
             consumer_list.append(consumer)
 
 
     if alarm_type == 'networksize' or alarm_type == 'all':
         # networksize and progress
-        '''
-        for qkey in zip(qkey_map.get('progress'), qkey_map.get('networksize')):
-            slog.warn('create consumer for networksize/progress, assign queue_key:{0}'.format(json.dumps(list(qkey))))
-            consumer = networksize_consumer.NetworkSizeAlarmConsumer(q=mq, queue_key_list = list(qkey))
-            consumer_list.append(consumer)
-        '''
-
-        qkey = qkey_map.get('progress')
-        qkey.extend(qkey_map.get('networksize'))
+        qkey = qkey_map.get('networksize')
         slog.warn('create consumer for networksize/progress, assign queue_key:{0}'.format(json.dumps(list(qkey))))
-        consumer = networksize_consumer.NetworkSizeAlarmConsumer(q=mq, queue_key_list = list(qkey))
+        consumer = networksize_consumer.NetworkSizeAlarmConsumer(q=mq, queue_key_list = list(qkey), alarm_env = alarm_env)
         consumer_list.append(consumer)
 
     # TODO(smaug) add other type here in the future
@@ -93,6 +85,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.description='TOP-Argus consumer，多进程方式启动一个消费者，绑定到某个类型的报警内容，进行消费'
     parser.add_argument('-t', '--type', help='bind with alarm_type,eg: packet, networksize...', default = '')
+    parser.add_argument('-e', '--env', help='env, eg: test,docker', default = 'test')
     args = parser.parse_args()
 
     if not args.type:
@@ -100,4 +93,6 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     alarm_type = args.type
-    run(alarm_type)
+    alarm_env = args.env
+    print('type:{0} env:{1}'.format(alarm_type,alarm_env))
+    run(alarm_type, alarm_env)

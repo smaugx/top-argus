@@ -17,10 +17,11 @@ from common.slogging import slog
 #{"local_node_id": "010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3", "uniq_chain_hash": "1146587997", "chain_hash":"79385948","chain_msgid": "917505", "packet_size": "602", "chain_msg_size": "189", "hop_num": "1", "recv_timestamp": "1573547749394", "src_node_id": "010000ffffffffffffffffffffffffff0000000088ae064b2bb22948a2aee8ecd81c08f9", "dest_node_id": "67000000ff7fff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716", "is_root": "0", "broadcast": "0"}
 
 class PacketAlarmConsumer(object):
-    def __init__(self, q, queue_key_list):
+    def __init__(self, q, queue_key_list, alarm_env = 'test'):
         slog.info("packet alarmconsumer init. pid:{0} paraent:{1} queue_key:{2}".format(os.getpid(), os.getppid(), json.dumps(queue_key_list)))
         self.expire_time_  = 20  # 10min, only focus on latest 10 min
         self.consume_step_ = 2000 # get_queue return size for one time
+        self.alarm_env_ = alarm_env
 
         self.packet_recv_info_flag_ = False  # False: will not track or store recv ndoes/ip of packet; True is reverse
 
@@ -84,8 +85,10 @@ class PacketAlarmConsumer(object):
     def run(self):
         # usually for one consumer , only handle one type
         slog.info('consume_alarm run')
-        self.consume_alarm_with_notry()
-        #self.consume_alarm()
+        if self.alarm_env_ == 'test':
+            self.consume_alarm_with_notry()
+        else:
+            self.consume_alarm()
         return
 
     def consume_alarm_with_notry(self):
