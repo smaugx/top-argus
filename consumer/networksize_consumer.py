@@ -36,7 +36,7 @@ class NetworkSizeAlarmConsumer(object):
         self.network_info_sql_ = NetworkInfoSql()
         self.system_alarm_info_sql_ = SystemAlarmInfoSql()
         self.node_info_sql_ = NodeInfoSql()
-        self.node_info_sql_.delete()
+        self.node_info_sql_.delete_db(data = {})
         
     def run(self):
         # usually for one consumer , only handle one type

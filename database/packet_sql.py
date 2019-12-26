@@ -312,7 +312,7 @@ class NodeInfoSql(Bean):
         return cls.update_dict(data = data, where = where )
 
     @classmethod
-    def delete(cls,data):
+    def delete_db(cls,data):
         sbegin = int(time.time() * 1000)
         where = []
         if data.get('public_ip_port'):
@@ -327,7 +327,7 @@ class NodeInfoSql(Bean):
         cls.delete(where = where)
         send = int(time.time() * 1000)
         slog.debug('delete from %s where %s taking:%d ms' % (cls._tbl,where,(send - sbegin)))
-        return vs, total
+        return
 
 
 
