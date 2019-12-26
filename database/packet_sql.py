@@ -311,6 +311,26 @@ class NodeInfoSql(Bean):
         print('update table node_info_table: %s where:%s' % (json.dumps(data),where))
         return cls.update_dict(data = data, where = where )
 
+    @classmethod
+    def delete(cls,data):
+        sbegin = int(time.time() * 1000)
+        where = []
+        if data.get('public_ip_port'):
+            where.append(' `public_ip_port` = "{0}" '.format(data.get('public_ip_port')))
+        if data.get('root'):
+            if len(data.get('root')) <= 20:
+                where.append(' `root` regexp "{0}" '.format(data.get('root')))
+            else:
+                where.append(' `root` = "{0}" '.format(data.get('root')))
+
+        where = ' and '.join(where)
+        cls.delete(where = where)
+        send = int(time.time() * 1000)
+        slog.debug('delete from %s where %s taking:%d ms' % (cls._tbl,where,(send - sbegin)))
+        return vs, total
+
+
+
 # store system_alarm_info 
 class SystemAlarmInfoSql(Bean):
     _tbl = 'system_alarm_info_table'
