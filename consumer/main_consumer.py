@@ -52,10 +52,18 @@ def run(alarm_type):
 
     if alarm_type == 'networksize' or alarm_type == 'all':
         # networksize and progress
+        '''
         for qkey in zip(qkey_map.get('progress'), qkey_map.get('networksize')):
             slog.warn('create consumer for networksize/progress, assign queue_key:{0}'.format(json.dumps(list(qkey))))
             consumer = networksize_consumer.NetworkSizeAlarmConsumer(q=mq, queue_key_list = list(qkey))
             consumer_list.append(consumer)
+        '''
+
+        qkey = qkey_map.get('progress')
+        qkey.extend(qkey_map.get('networksize'))
+        slog.warn('create consumer for networksize/progress, assign queue_key:{0}'.format(json.dumps(list(qkey))))
+        consumer = networksize_consumer.NetworkSizeAlarmConsumer(q=mq, queue_key_list = list(qkey))
+        consumer_list.append(consumer)
 
     # TODO(smaug) add other type here in the future
 

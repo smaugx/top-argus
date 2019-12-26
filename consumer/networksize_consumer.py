@@ -120,7 +120,7 @@ class NetworkSizeAlarmConsumer(object):
 
         if not self.update_node_info(content):
             return
-        self.dump_db_node_info(conent)
+        self.dump_db_node_info(content)
         return
 
     def networksize_alarm_ent(self, content):
@@ -305,7 +305,14 @@ class NetworkSizeAlarmConsumer(object):
         node_id = content.get('node_id')
         send_timestamp = content.get('send_timestamp') or int(time.time() * 1000)
 
-        value = self.node_info_.get(node_ip)
+        value = copy.deepcopy(self.node_info_.get(node_ip))
+        if not value:
+            slog.warn('invalid node_id:{0} node_ip:{1}'.format(node_id, node_ip))
+            return
+        print(value)
+        for k,v in value.items():
+            if k != 'public_ip_port' and k != 'root':
+                value[k] = json.dumps(v)
         self.node_info_sql_.update_insert_to_db(value)
         slog.info("dump node_info to db:{0}".format(json.dumps(value)))
         
