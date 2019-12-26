@@ -12,14 +12,14 @@
         <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
         <script type="text/javascript" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
         <link rel=stylesheet type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
-         <link rel="stylesheet" type="text/css" href="css/dmaku2.css" />
+         <link rel="stylesheet" type="text/css" href="css/dmaku.css" />
     </head>
     
     <body>
 
 <div class="main">
-        <div class="navi_head">
-                <div class="navi_head_main">
+        <div class="navi_body">
+                <div class="navi_head">
                         <div style="width:80%; margin-left:auto; margin-right:auto;">
                                 <span>
                     <p class="navi_title"><a href="/index.html">首页</a></p>
@@ -27,7 +27,6 @@
 
                                 <span>
                                         <p class="navi_title"><a href="/packet.html">收包情况</a></p>
-                                        <p><a href="/packet.html?dest_node_id=010000">ROOT网络</a></p>
                                         <p><a href="/packet.html?dest_node_id=680000">高级网络</a></p>
                                         <p><a href="/packet.html?dest_node_id=690000">共识网络</a></p>
                                         <p><a href="/packet.html?dest_node_id=640000">Rec 网络</a></p>
@@ -38,12 +37,6 @@
 
                                 <span>
                                         <p class="navi_title"><a href="/network.html">P2P网络</a></p>
-                                        <p><a href="/network.html?network_id=680000">高级网络</a></p>
-                                        <p><a href="/network.html?network_id=690000">共识网络</a></p>
-                                        <p><a href="/network.html?network_id=640000">Rec 网络</a></p>
-                                        <p><a href="/network.html?network_id=640000">Zec 网络</a></p>
-                                        <p><a href="/network.html?network_id=660000">Edge 网络</a></p>
-                                        <p><a href="/network.html?network_id=670000">Archive 网络</a></p>
                                 </span>
 
                                 <span>
