@@ -43,6 +43,8 @@ class PacketAlarmConsumer(object):
         self.packet_info_sql = PacketInfoSql()
         self.packet_recv_info_sql = PacketRecvInfoSql()
         self.network_info_sql = NetworkInfoSql()
+
+        self.network_info_shm_filename_ = '/dev/shm/topargus_network_info'
         
         #template of packet_info
         self.template_packet_info_ = {
@@ -279,6 +281,8 @@ class PacketAlarmConsumer(object):
         return vs, total
     
     def update_network_ids(self, network_id):
+        if self.update_network_ids_from_shm():
+            return True
         data = {
                 'network_id': network_id
                 }
@@ -299,6 +303,22 @@ class PacketAlarmConsumer(object):
             return False
         return True
 
+    def update_network_ids_from_shm(self):
+        if not os.path.exists(self.network_info_shm_filename_):
+            return False
+        try:
+            with open(self.network_info_shm_filename_, 'r') as fin:
+                self.network_ids_ = json.loads(fin.read())
+                slog.info('update network_id from shm:{0}'.format(self.network_info_shm_filename_))
+                fin.close()
+            for k,v in self.network_ids_:
+                slog.debug('after update network_id:{0} size:{1}'.format(k, v.get('size')))
+            self.network_ids_['update'] = int(time.time() * 1000)
+            return True
+        except Exception as e:
+            slog.warn('catch exception:{0}'.format(e))
+            return False
+
     def get_networksize_from_remote(self, network_id):
         if network_id.startswith('010000'):
             network_id = '010000'
@@ -306,7 +326,7 @@ class PacketAlarmConsumer(object):
         update = self.network_ids_.get('update') or 0
         slog.debug('diff:{0} secs'.format( (now - update) / 1000))
 
-        if not update or (now - update > 60 * 1000) or (network_id not in self.network_ids_):
+        if not update or (now - update > 20 * 1000) or (network_id not in self.network_ids_):
             if not self.update_network_ids(network_id):
                 return 0
 

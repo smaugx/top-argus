@@ -37,7 +37,10 @@ class NetworkSizeAlarmConsumer(object):
         self.system_alarm_info_sql_ = SystemAlarmInfoSql()
         self.node_info_sql_ = NodeInfoSql()
         self.node_info_sql_.delete_db(data = {})
-        
+
+        self.network_info_shm_filename_ = '/dev/shm/topargus_network_info'
+        return
+
     def run(self):
         # usually for one consumer , only handle one type
         slog.info('consume_alarm run')
@@ -114,6 +117,7 @@ class NetworkSizeAlarmConsumer(object):
             return
         # something updated
         self.dump_db_networksize()
+        self.dump_shm_networksize()
 
         if not self.update_node_info(content):
             return
@@ -177,6 +181,15 @@ class NetworkSizeAlarmConsumer(object):
             slog.info('dump network_id:{0} size:{1}'.format(k, v.get('size')))
             self.network_info_sql_.update_insert_to_db(net_data)
         return
+
+    def dump_shm_networksize(self):
+        # network_info
+        slog.info("dump network_id to shm")
+        with open(self.network_info_shm_filename_, 'w') as fout:
+            fout.write(json.dumps(self.network_ids_))
+            fout.close()
+        return
+
     
     def load_db_networksize(self):
         # TODO(smaug) not use for now
@@ -229,11 +242,11 @@ class NetworkSizeAlarmConsumer(object):
             if node_ip not in self.node_info_:
                 slog.warn('remove node_id:{0} from nonexistent node_info'.format(node_id))
                 return  False
-            tmp_keys = self.node_info_.get(node_ip).keys()
+            tmp_keys = copy.deepcopy(list(self.node_info_.get(node_ip).keys()))
             for k in tmp_keys:
                 if k != 'public_ip_port':
                     # just keep {'public_ip_port':node_ip}
-                    self.node_info_[node_ip].remove(k)
+                    self.node_info_[node_ip].pop(k)
             slog.warn('root_node_id:{0} {1} down down down!!!'.format(node_id, node_ip))
             return True
 
