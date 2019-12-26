@@ -52,8 +52,6 @@ class NetworkSizeAlarmConsumer(object):
                 alarm_type = alarm_payload.get('alarm_type')
                 if alarm_type == 'networksize':
                     self.networksize_alarm(alarm_payload.get('alarm_content'))
-                elif alarm_type == 'progress':
-                    self.progress_alarm(alarm_payload.get('alarm_content'))
                 else:
                     slog.warn('invalid alarm_type:{0}'.format(alarm_type))
         return
@@ -68,8 +66,6 @@ class NetworkSizeAlarmConsumer(object):
                     alarm_type = alarm_payload.get('alarm_type')
                     if alarm_type == 'networksize':
                         self.networksize_alarm(alarm_payload.get('alarm_content'))
-                    elif alarm_type == 'progress':
-                        self.progress_alarm(alarm_payload.get('alarm_content'))
                     else:
                         slog.warn('invalid alarm_type:{0}'.format(alarm_type))
             except Exception as e:
@@ -134,6 +130,11 @@ class NetworkSizeAlarmConsumer(object):
         if network_id.startswith('010000'):
             network_id = '010000'
         node_id_status = content.get('node_id_status')
+        if node_id_status == 'dead':
+            # xtopchain maybe down
+            self.remove_dead_node(node_ip)
+            return True
+
         if node_id_status == 'remove':
             if network_id not in self.network_ids_:
                 slog.warn('remove node_id:{0} from nonexistent network_id:{1}'.format(node_id, network_id))
@@ -166,37 +167,6 @@ class NetworkSizeAlarmConsumer(object):
             return True
 
         return False
-
-    def progress_alarm(self, content):
-        if not self.progress_alarm_ent(content):
-            return
-
-        self.dump_db_networksize()
-        return
-
-    # recv progress alarm,like down,high cpu,high mem...
-    # TODO(smaug)
-    def progress_alarm_ent(self, content):
-        now = int(time.time() * 1000)
-        send_timestamp = content.get('timestamp') or now
-        if now - send_timestamp > 10 * 60 * 1000:
-            slog.warn('ignore alarm:{0}'.format(json.dumps(content)))
-            return False
-        node_id = content.get('node_id')
-        info = content.get('info')
-        slog.info(info)
-        node_ip = self.get_node_ip(node_id)
-        slog.info('get_node_ip {0} of node_id:{1}'.format(node_ip, node_id))
-        if not node_ip:
-            return False
-        self.remove_dead_node(node_ip)
-
-        # alarm info
-        root_id = ''
-        if self.node_info_.get(node_ip):
-            root_id = self.node_info_.get(node_ip).get('root') or ''
-        self.dump_db_system_alarm_info(node_ip, root_id, PRIORITY_DICT.get('high'), 'xtopchain down', send_timestamp)
-        return True
 
     def dump_db_networksize(self):
         # network_info
@@ -254,19 +224,25 @@ class NetworkSizeAlarmConsumer(object):
             net_type = 'val'
 
         node_id_status = content.get('node_id_status')
+        if node_id_status == 'dead':
+            if node_ip not in self.node_info_:
+                slog.warn('remove node_id:{0} from nonexistent node_info'.format(node_id))
+                return  False
+            tmp_keys = self.node_info_.get(node_ip).keys()
+            for k in tmp_keys:
+                if k != 'public_ip_port':
+                    # just keep {'public_ip_port':node_ip}
+                    self.node_info_[node_ip].remove(k)
+            slog.warn('root_node_id:{0} {1} down down down!!!'.format(node_id, node_ip))
+            return True
+
         if node_id_status == 'remove':
             if node_ip not in self.node_info_:
                 slog.warn('remove node_id:{0} from nonexistent node_info'.format(node_id))
                 return  False
-            if network_id == '010000':
-                #self.node_info_.pop(node_ip)
-                tmp_keys = self.node_info_.get(node_ip).keys()
-                for k in tmp_keys:
-                    if k != 'public_ip_port':
-                        # just keep {'public_ip_port':node_ip}
-                        self.node_info_[node_ip].remove(k)
-                slog.warn('root_node_id:{0} {1} down down down!!!'.format(node_id, node_ip))
-                return True
+            if not self.node_info_[node_ip].get(net_type):
+                slog.warn('remove node_id:{0} from nonexistent node_type:{1}'.format(node_id, net_type))
+                return False
             if node_id in self.node_info_[node_ip][net_type]:
                 self.node_info_[node_ip][net_type].remove(node_id)
                 return True
@@ -318,17 +294,22 @@ class NetworkSizeAlarmConsumer(object):
         
         # upadte system_alarm_info
         alarm_info = ''
+        root_id = ''
+        priority = PRIORITY_DICT.get('low')
         node_id_status = content.get('node_id_status')
         if node_id_status == 'remove':
             alarm_info = 'node_info remove node_id:{0} node_ip:{1}'.format(node_id, node_ip)
+        elif node_id_status == 'dead':
+            root_id = node_id  # 010000
+            alarm_info = 'xtopchain down node_id:{0} node_ip:{1}'.format(node_id, node_ip)
+            priority = PRIORITY_DICT.get('high')
         else:
             alarm_info = 'node_info add node_id:{0} node_ip:{1}'.format(node_id, node_ip)
 
-        root_id = ''
-        if self.node_info_.get(node_ip):
+        if not root_id and self.node_info_.get(node_ip):
             root_id = self.node_info_.get(node_ip).get('root') or ''
 
-        self.dump_db_system_alarm_info(node_ip, root_id, PRIORITY_DICT.get('low'), alarm_info, send_timestamp)
+        self.dump_db_system_alarm_info(node_ip, root_id, priority, alarm_info, send_timestamp)
         return
 
     def dump_db_system_alarm_info(self, public_ip_port,root = '', priority = 0, alarm_info = '', send_timestamp = 0):
