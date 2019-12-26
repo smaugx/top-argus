@@ -22,6 +22,7 @@ import argparse
 gconfig = {
         'global_sample_rate': 500,  # sample_rate%。  50%
         'alarm_pack_num': 2,   # upload alarm size one time
+        'config_update_time': 5 * 60,  # 5 mins
         'grep_broadcast': {
             'start': 'true',
             'sample_rate': 200,  #20%

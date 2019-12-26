@@ -35,6 +35,7 @@ SHM_GCONFIG_FILE = '/dev/shm/topargus_gconfig'
 PROXY_CONFIG = {
         'global_sample_rate': 500,  # sample_rate%。 50%
         'alarm_pack_num': 2,   # upload alarm size one time
+        'config_update_time': 5 * 60,  # 5mins
         'grep_broadcast': {
             'start': 'true',
             'sample_rate': 100,   #10%
