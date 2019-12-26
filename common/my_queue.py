@@ -73,13 +73,16 @@ class RedisQueue(object):
         msg_hash = None
         if alarm_type == 'packet':
             msg_hash = int(alarm_item.get('alarm_content').get('uniq_chain_hash'))
-        elif alarm_type == 'networksize' or alarm_type == 'progress':
+        elif alarm_type == 'networksize':
             node_id = alarm_item.get('alarm_content').get('node_id') 
             network_id = node_id[:17]  # head 8 * 2 bytes
             if network_id.startswith('010000'):
                 network_id = '010000'
-
             msg_hash = int(int(hashlib.sha256(network_id.encode('utf-8')).hexdigest(), 16) % 10**8)
+        elif alarm_type == 'progress':
+            node_ip = '127.0.0.1:9000'
+            msg_hash = int(int(hashlib.sha256(node_ip.encode('utf-8')).hexdigest(), 16) % 10**8)
+            msg_hash = random.randint(0,10000)
         else:
             msg_hash = random.randint(0,10000)
 
