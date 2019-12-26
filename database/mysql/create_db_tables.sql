@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS node_info_table(
                 adv  VARCHAR(1000) DEFAULT "",
                 val  VARCHAR(1000) DEFAULT "",
                 PRIMARY KEY (public_ip_port),
-                INDEX (root_node_id)
+                INDEX (root)
 )
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS system_alarm_info_table(
                 alarm_info VARCHAR(1000) DEFAULT "",
                 send_timestamp bigint(20) unsigned DEFAULT 0,
                 PRIMARY KEY (id),
-                INDEX (root_node_id, public_ip_port, send_timestamp)
+                INDEX (root, public_ip_port, send_timestamp)
 )
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;
