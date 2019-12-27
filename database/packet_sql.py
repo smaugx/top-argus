@@ -262,7 +262,7 @@ class DropRateInfoSql(Bean):
 # store node_info 
 class NodeInfoSql(Bean):
     _tbl = 'node_info_table'
-    _cols = 'public_ip_port,root,rec,zec,edg,arc,adv,val'
+    _cols = 'public_ip_port,root,status,rec,zec,edg,arc,adv,val'
 
     def __init__(self):
         return
