@@ -10,7 +10,7 @@ import queue
 import copy
 import os
 import threading
-from database.packet_sql import PacketInfoSql, PacketRecvInfoSql, NetworkInfoSql,DropRateInfoSql,NodeInfoSql
+from database.packet_sql import PacketInfoSql, PacketRecvInfoSql, NetworkInfoSql,DropRateInfoSql,NodeInfoSql,SystemAlarmInfoSql
 from common.slogging import slog
 import common.sipinfo as sipinfo
 
@@ -26,6 +26,7 @@ class Dash(object):
         self.network_info_sql = NetworkInfoSql()
         self.packet_drop_rate_sql = DropRateInfoSql()
         self.node_info_sql_ = NodeInfoSql()
+        self.system_alarm_info_sql_ = SystemAlarmInfoSql()
 
         self.network_ids_lock_ = threading.Lock()
         self.network_ids_ = {}
@@ -389,5 +390,36 @@ class Dash(object):
         results['node_info'] = vs
         results['node_size'] = len(vs)
         slog.debug('get node_info ok:{0}'.format(json.dumps(results)))
+        return results
+
+
+    # get system_alarm_info of one or more public_ip_port/root/...
+    def get_system_alarm_info(self,data, page = 1, limit = 200):
+        '''
+        data = {
+                'public_ip_port':   public_ip_port,
+                'root':             root,
+                'priority':         priority_list,
+                'begin':            begin,
+                'end':              end
+        }
+        # db field
+         id    | priority | public_ip_port   | root | alarm_info     | send_timestamp |
+        '''
+        tbegin = int(time.time() * 1000)
+        results = {
+                'system_alarm_info':[],
+                'size':0,
+                }
+        vs,total = [],0
+        vs,total = self.system_alarm_info_sql_.query_from_db(data, page = page, limit = limit)
+        if not vs:
+            slog.debug('system_alarm_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
+
+        tend = int(time.time() * 1000)
+        slog.debug('get_system_alarm_info taking:{0} ms'.format(tend - tbegin))
+        results['system_alarm_info'] = vs
+        results['size'] = len(vs)
+        slog.debug('get system_alarm_info ok, size:{0}'.format(len(vs)))
         return results
 

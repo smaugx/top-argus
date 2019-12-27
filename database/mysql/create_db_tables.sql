@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS system_alarm_info_table(
                 alarm_info VARCHAR(1000) DEFAULT "",
                 send_timestamp bigint(20) unsigned DEFAULT 0,
                 PRIMARY KEY (id),
-                INDEX (root, public_ip_port, send_timestamp)
+                INDEX (priority, public_ip_port, root, send_timestamp)
 )
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;

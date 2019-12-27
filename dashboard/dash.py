@@ -351,6 +351,52 @@ def node_info_query():
         ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
         return jsonify(ret)
 
+# GET /api/web/system_alarm_info/?public_ip_port=127.0.0.1:9000&root=01000&priority=0,1,2&begin=1509349430493&end=1508943893990
+@app.route('/api/web/system_alarm_info/', methods = ['GET'])
+@app.route('/api/web/system_alarm_info', methods = ['GET'])
+@auth.login_required
+def system_alarm_info_query():
+    tnow = int(time.time() * 1000)
+    public_ip_port   = request.args.get('public_ip_port')    or None
+    root             = request.args.get('root')              or None
+    priority         = request.args.get('priority')          or None
+    begin            = request.args.get('begin')             or (tnow - 1 * 60 * 60 * 1000)  # latest 1 hour
+    end              = request.args.get('end')               or tnow
+    limit            = request.args.get('limit')             or 200
+    page             = request.args.get('page')              or 1
+
+    status_ret = {
+            0:'OK',
+            -1:'没有数据',
+            -2: '参数不合法',
+            }
+    priority_list = None
+    if priority:
+        priority_list = priority.split(',')
+    for p in priority_list:
+        try:
+            p = int(p)
+            priority_list.append(p)
+        except Exception as e:
+            pass
+
+    data = {
+            'public_ip_port':   public_ip_port,
+            'root':             root,
+            'priority':         priority_list,
+            'begin':            begin,
+            'end':              end
+    }
+
+    results = mydash.get_system_alarm_info(data, page= page, limit = limit)
+    if results:
+        ret = {'status':0,'error': status_ret.get(0) , 'results': results}
+        return jsonify(ret)
+    else:
+        ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
+        return jsonify(ret)
+
+
 
 
 

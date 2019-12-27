@@ -354,7 +354,7 @@ class SystemAlarmInfoSql(Bean):
         return
 
     @classmethod
-    def query_from_db(cls,data,cols = None,page = 1, limit = 50):
+    def query_from_db(cls,data,cols = None,page = 1, limit = 200):
         sbegin = int(time.time() * 1000)
         where ,vs,total = [],[],0
 
@@ -365,9 +365,11 @@ class SystemAlarmInfoSql(Bean):
                 where.append(' `root` regexp "{0}" '.format(data.get('root')))
             else:
                 where.append(' `root` = "{0}" '.format(data.get('root')))
-        if data.get('priority'): # list of priority, eg: [0,1,3]
+        if data.get('priority'): # list of priority, eg: [0,1,2] ,0 is low, 1 is middle, 2 is high
             wp = []
             for p in data.get('priority'):
+                if p not in [0,1,2]:
+                    continue
                 wp.append(' `priority` = "{0}" '.format(p))
             wp = ' or '.join(wp)
             if wp:
