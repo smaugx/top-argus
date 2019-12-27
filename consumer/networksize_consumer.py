@@ -315,13 +315,13 @@ class NetworkSizeAlarmConsumer(object):
         priority = PRIORITY_DICT.get('low')
         node_id_status = content.get('node_id_status')
         if node_id_status == 'remove':
-            alarm_info = 'node_info remove node_id:{0} node_ip:{1}'.format(node_id, node_ip)
+            alarm_info = 'remove node_id:{0}'.format(node_id)
         elif node_id_status == 'dead':
             root_id = node_id  # 010000
-            alarm_info = 'xtopchain down node_id:{0} node_ip:{1}'.format(node_id, node_ip)
+            alarm_info = 'xtopchain down'
             priority = PRIORITY_DICT.get('high')
         else:
-            alarm_info = 'node_info add node_id:{0} node_ip:{1}'.format(node_id, node_ip)
+            alarm_info = 'add node_id:{0}'.format(node_id)
 
         if not root_id and self.node_info_.get(node_ip):
             root_id = self.node_info_.get(node_ip).get('root') or ''
