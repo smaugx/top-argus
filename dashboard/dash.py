@@ -213,8 +213,19 @@ def network_query():
             'withip': withip
             }
 
+    history_max_node_size = 0
+    if network_id.startswith('0100'):  # get real node
+        ndata = {
+                'simple': 'true',
+                }
+        node_info_results = mydash.get_node_info(ndata)
+        if node_info_results.get('node_size'):
+            history_max_node_size = node_info_results.get('node_size')
+            slog.debug('get history_max_node_size:{0} for network_id:{1}'.format(history_max_node_size, network_id))
+
     results = mydash.get_network_ids_exp(data)
     if results:
+        results['max_node_size'] = history_max_node_size
         ret = {'status':0,'error': status_ret.get(0) , 'results': results}
         return jsonify(ret)
     else:
@@ -295,9 +306,50 @@ def packet_drop_query():
     else:
         ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
         return jsonify(ret)
- 
- 
 
+
+# GET /api/web/node_info/?simple=true&public_ip_port=127.0.0.1:9000&root=0100&status=online&rec=6400&zec=6500&edg=6600&arc=6700&adv=6800&val=6900
+@app.route('/api/web/node_info/', methods = ['GET'])
+@app.route('/api/web/node_info', methods = ['GET'])
+@auth.login_required
+def node_info_query():
+    simple           = request.args.get('simple')            or 'false'
+    public_ip_port   = request.args.get('public_ip_port')    or None
+    root             = request.args.get('root')              or None
+    status           = request.args.get('status')            or None
+    rec              = request.args.get('rec')               or None 
+    zec              = request.args.get('zec')               or None
+    edg              = request.args.get('edg')               or None
+    arc              = request.args.get('arc')               or None
+    adv              = request.args.get('adv')               or None
+    val              = request.args.get('val')               or None     
+
+    status_ret = {
+            0:'OK',
+            -1:'没有数据',
+            -2: '参数不合法',
+            }
+
+    data = {
+            'simple':           simple,
+            'public_ip_port':   public_ip_port,
+            'root':             root,
+            'status':           status,
+            'rec':              rec,
+            'zec':              zec,
+            'edg':              edg,
+            'arc':              arc,
+            'adv':              adv,
+            'val':              val,
+    }
+
+    results = mydash.get_node_info(data)
+    if results:
+        ret = {'status':0,'error': status_ret.get(0) , 'results': results}
+        return jsonify(ret)
+    else:
+        ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
+        return jsonify(ret)
 
 
 

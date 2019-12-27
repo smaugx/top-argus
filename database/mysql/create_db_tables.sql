@@ -82,6 +82,7 @@ DROP TABLE IF EXISTS node_info_table;
 CREATE TABLE IF NOT EXISTS node_info_table(
                 public_ip_port VARCHAR(25) NOT NULL,
                 root VARCHAR(73) DEFAULT "", 
+                status VARCHAR(10) DEFAULT "online", /* offline */
                 rec  VARCHAR(1000) DEFAULT "",
                 zec  VARCHAR(1000) DEFAULT "",
                 edg  VARCHAR(1000) DEFAULT "",
@@ -89,7 +90,7 @@ CREATE TABLE IF NOT EXISTS node_info_table(
                 adv  VARCHAR(1000) DEFAULT "",
                 val  VARCHAR(1000) DEFAULT "",
                 PRIMARY KEY (public_ip_port),
-                INDEX (root)
+                INDEX (root,status)
 )
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;

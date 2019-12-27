@@ -268,7 +268,7 @@ class NodeInfoSql(Bean):
         return
 
     @classmethod
-    def query_from_db(cls,data,cols = None,page = 1, limit = 50):
+    def query_from_db(cls,data,cols = None,page = 1, limit = 2000):
         sbegin = int(time.time() * 1000)
         where ,vs,total = [],[],0
 
@@ -279,6 +279,20 @@ class NodeInfoSql(Bean):
                 where.append(' `root` regexp "{0}" '.format(data.get('root')))
             else:
                 where.append(' `root` = "{0}" '.format(data.get('root')))
+        if data.get('status'):  # online or offline
+            where.append(' `status` = "{0}" '.format(data.get('status')))
+        if data.get('rec'):
+            where.append(' `rec` like "%%{0}%%" '.format(data.get('rec')))
+        if data.get('zec'):
+            where.append(' `zec` like "%%{0}%%" '.format(data.get('zec')))
+        if data.get('edg'):
+            where.append(' `edg` like "%%{0}%%" '.format(data.get('edg')))
+        if data.get('arc'):
+            where.append(' `arc` like "%%{0}%%" '.format(data.get('arc')))
+        if data.get('adv'):
+            where.append(' `adv` like "%%{0}%%" '.format(data.get('adv')))
+        if data.get('val'):
+            where.append(' `val` like "%%{0}%%" '.format(data.get('val')))
 
         where = ' and '.join(where)
         vs,total = [],0

@@ -10,7 +10,7 @@ import queue
 import copy
 import os
 import threading
-from database.packet_sql import PacketInfoSql, PacketRecvInfoSql, NetworkInfoSql,DropRateInfoSql
+from database.packet_sql import PacketInfoSql, PacketRecvInfoSql, NetworkInfoSql,DropRateInfoSql,NodeInfoSql
 from common.slogging import slog
 import common.sipinfo as sipinfo
 
@@ -25,6 +25,7 @@ class Dash(object):
         self.packet_recv_info_sql = PacketRecvInfoSql()
         self.network_info_sql = NetworkInfoSql()
         self.packet_drop_rate_sql = DropRateInfoSql()
+        self.node_info_sql_ = NodeInfoSql()
 
         self.network_ids_lock_ = threading.Lock()
         self.network_ids_ = {}
@@ -338,4 +339,54 @@ class Dash(object):
         return results
 
 
+    # get node_info of one or more public_ip_port/root/...
+    def get_node_info(self,data):
+        '''
+        {
+        'simple': 'true',  # set true only return public_ip_port and root and status field
+        'public_ip_port':'127.0.0.1:9000',
+        'root': '010000',
+        'status': 'online',
+        'rec': '640000xxx',
+        'zec': '6500',
+        'edg':'6600000',
+        'arc': '67000',
+        'adv': '6800000',
+        'val': '69000xxx',
+        }
+
+        # db field
+        public_ip_port VARCHAR(25) NOT NULL,
+        root VARCHAR(73) DEFAULT "",
+        status VARCHAR(10) DEFAULT "online", /* offline */
+        rec  VARCHAR(1000) DEFAULT "",
+        zec  VARCHAR(1000) DEFAULT "",
+        edg  VARCHAR(1000) DEFAULT "",
+        arc  VARCHAR(1000) DEFAULT "",
+        adv  VARCHAR(1000) DEFAULT "",
+        val  VARCHAR(1000) DEFAULT "",
+        '''
+        tbegin = int(time.time() * 1000)
+        results = {
+                'node_info':[],
+                'node_size':0,
+                }
+        cols = None
+        if data.get('simple') == 'true':
+            cols = 'public_ip_port,root,status'
+        vs,total = [],0
+        vs,total = self.node_info_sql_.query_from_db(data, cols = cols)
+        if not vs:
+            slog.debug('node_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
+        for i in range(0, len(vs)):
+            for k,v in vs[i].items():
+                if k in ['rec', 'zec', 'edg', 'arc', 'adv', 'val']:
+                    vs[i][k] = json.loads(v)
+
+        tend = int(time.time() * 1000)
+        slog.debug('get_node_info taking:{0} ms'.format(tend - tbegin))
+        results['node_info'] = vs
+        results['node_size'] = len(vs)
+        slog.debug('get node_info ok:{0}'.format(json.dumps(results)))
+        return results
 
