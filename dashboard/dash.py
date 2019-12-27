@@ -370,15 +370,16 @@ def system_alarm_info_query():
             -1:'没有数据',
             -2: '参数不合法',
             }
-    priority_list = None
+    print('priority:{0}'.format(priority))
+    priority_list = []
     if priority:
-        priority_list = priority.split(',')
-    for p in priority_list:
-        try:
-            p = int(p)
-            priority_list.append(p)
-        except Exception as e:
-            pass
+        tmp_priority_list = priority.split(',')
+        for p in tmp_priority_list:
+            try:
+                p = int(p)
+                priority_list.append(p)
+            except Exception as e:
+                slog.warn('catch exception:{0}'.format(e))
 
     data = {
             'public_ip_port':   public_ip_port,
@@ -388,6 +389,7 @@ def system_alarm_info_query():
             'end':              end
     }
 
+    print('hell')
     results = mydash.get_system_alarm_info(data, page= page, limit = limit)
     if results:
         ret = {'status':0,'error': status_ret.get(0) , 'results': results}
