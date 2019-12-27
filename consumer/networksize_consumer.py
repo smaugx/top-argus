@@ -307,9 +307,11 @@ class NetworkSizeAlarmConsumer(object):
             slog.warn('invalid node_id:{0} node_ip:{1}'.format(node_id, node_ip))
             return
         print(value)
-        for k,v in value.items():
-            if k != 'public_ip_port' and k != 'root':
-                value[k] = json.dumps(v)
+        for k in copy.deepcopy(list(value.keys())):
+            if not value.get(k):
+                value.pop(k)
+            if k in ['rec', 'zec', 'edg', 'arc', 'adv', 'val']
+                value[k] = json.dumps(value.get(k))
         self.node_info_sql_.update_insert_to_db(value)
         slog.info("dump node_info to db:{0}".format(json.dumps(value)))
         
