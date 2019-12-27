@@ -390,9 +390,9 @@ def system_alarm_info_query():
     }
 
     print('hell')
-    results = mydash.get_system_alarm_info(data, page= page, limit = limit)
+    results, total = mydash.get_system_alarm_info(data, page= page, limit = limit)
     if results:
-        ret = {'status':0,'error': status_ret.get(0) , 'results': results}
+        ret = {'status':0,'error': status_ret.get(0) , 'results': results, 'total': total}
         return jsonify(ret)
     else:
         ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}

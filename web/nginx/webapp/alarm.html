@@ -47,6 +47,7 @@
                                         <p><a href="/alarm.html">all</a></p>
                                         <p><a href="/alarm.html?priority=0">low</a></p>
                                         <p><a href="/alarm.html?priority=1">middle</a></p>
+                                        <p><a href="/alarm.html?priority=2">high</a></p>
                                 </span>
                                 <span>
                                         <p class="navi_title"><a href="/system.html">系统情况</a></p>
@@ -114,7 +115,7 @@ function getQueryString(name) {
                     "searching":true,  // 是否开启搜索功能(默认开启)
                     "ordering": true,  // 是否开启排序功能(默认开启)
                     //"order":[ [11,'asc'] ], // 设置默认排序的表格列[参数1是表格列的下标，从0开始] 升序
-                    "order":[ [11,'desc'] ], // 设置默认排序的表格列[参数1是表格列的下标，从0开始] 降序
+                    "order":[ [5,'desc'] ], // 设置默认排序的表格列[参数1是表格列的下标，从0开始] 降序
                     "stateSave": true,      // 是否保存当前datatables的状态(刷新后当前保持状态)
                     "processing": true,     // 显示处理中的字样[数量多的时候提示用户在处理中](默认开启)
                     "serverSide": true,    // 是否开启服务器模式 // false时，会一次性查询所有的数据，dataTables帮我们完成分页等。// true时，点击分页页码就会每次都到后台提取数据。
@@ -145,19 +146,17 @@ function getQueryString(name) {
                                     //returnData.data = result.results;//返回的数据列表
                                     //调用DataTables提供的callback方法，代表数据已封装完成并传回DataTables进行渲染
                                     //此时的数据需确保正确无误，异常判断应在执行此回调前自行处理完毕
-                                <th>id</th>
-                                <th bgcolor="#ff0000">priority</th>
-                                <th>ip</th>
-                                <th>rootid</th>
-                                <th>alarm_info</th>
-                                <th>timestamp</th>
-
                                 var final_data = new Array();
                                 for (var i =0; i < result['results']['system_alarm_info'].length; ++i) {
                                     var item = result['results']['system_alarm_info'][i];
                                     var new_item = {};
                                     new_item['id'] = item['id'];
-                                    new_item['priority'] = item['priority'];
+                                    if (item['priority'] == 2) {
+                                        new_item['priority'] = '<span style="color:red;font-weight:bold">' + item['priority'] + '</span>';
+                                    } else {
+                                        new_item['priority'] = item['priority'];
+                                    }
+
                                     new_item['ip'] = '<a href="/alarm.html?public_ip_port='+item['public_ip_port']+ '&priority=' + item['priority'] + '">'+ item['public_ip_port']  + '</a>';
                                     new_item['rootid'] = '<a href="/alarm.html?public_ip_port='+item['public_ip_port']+ '&priority=' + item['priority']  + '">'+ item['root'].substring(0,7)+"..."+item['root'].substring(66,72) + '</a>';
                                     new_item['alarm_info'] = item['alarm_info'];

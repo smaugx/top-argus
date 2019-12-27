@@ -421,5 +421,5 @@ class Dash(object):
         results['system_alarm_info'] = vs
         results['size'] = len(vs)
         slog.debug('get system_alarm_info ok, size:{0}'.format(len(vs)))
-        return results
+        return results, total
 
