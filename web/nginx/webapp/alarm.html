@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>
+           TOPARGUS-主网监控系统 
+        </title>
+        <!-- 引入 echarts.js -->
+        <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+        <script type="text/javascript" src="http://cdn.highcharts.com.cn/highcharts/highcharts.js"></script>
+        <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+        <script type="text/javascript" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+        <link rel=stylesheet type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
+        <link rel="stylesheet" type="text/css" href="css/dmaku2.css" />
+</head>
+
+<body>
+<div>
+        <div class="navi_head">
+                <div class="navi_head_main">
+                        <div style="width:80%; margin-left:auto; margin-right:auto;">
+                                <span>
+                                        <p class="navi_title"><a href="/index.html">首页</a></p>
+                                </span>
+                                <span>
+                                        <p class="navi_title"><a href="/packet.html">收包情况</a></p>
+                                        <p><a href="/packet.html?dest_node_id=010000">ROOT网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=680000">高级网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=690000">共识网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=640000">Rec 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=650000">Zec 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=660000">Edge 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=670000">Archive 网络</a></p>
+                                </span>
+                                <span>
+                                        <p class="navi_title"><a href="/network.html">P2P网络</a></p>
+                                        <p><a href="/network.html?network_id=680000">高级网络</a></p>
+                                        <p><a href="/network.html?network_id=690000">共识网络</a></p>
+                                        <p><a href="/network.html?network_id=640000">Rec 网络</a></p>
+                                        <p><a href="/network.html?network_id=640000">Zec 网络</a></p>
+                                        <p><a href="/network.html?network_id=660000">Edge 网络</a></p>
+                                        <p><a href="/network.html?network_id=670000">Archive 网络</a></p>
+                                </span>
+                                <span>
+                                        <p class="navi_title"><a href="/alarm.html?priority=2">告警事件</a></p>
+                                        <p><a href="/alarm.html">all</a></p>
+                                        <p><a href="/alarm.html?priority=0">low</a></p>
+                                        <p><a href="/alarm.html?priority=1">middle</a></p>
+                                </span>
+                                <span>
+                                        <p class="navi_title"><a href="/system.html">系统情况</a></p>
+                                </span>
+                                <span>
+                                        <p class="navi_title"><a href="/about.html">关于</a></p>
+                                </span>
+                        </div>
+                </div>
+        </div>
+
+        <div class="navi_body">
+            <div style="width:100%">
+                <table id="alarm_table" class="display" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th bgcolor="#ff0000">priority</th>
+                                <th>ip</th>
+                                <th>rootid</th>
+                                <th>alarm_info</th>
+                                <th>timestamp</th>
+                            </tr>
+                        </thead>
+                        <tfoot>
+                            <tr>
+                                <th>id</th>
+                                <th bgcolor="#ff0000">priority</th>
+                                <th>ip</th>
+                                <th>rootid</th>
+                                <th>alarm_info</th>
+                                <th>timestamp</th>
+                            </tr>
+                        </tfoot>
+                </table>
+
+            </div>
+
+        </div>
+
+</div>
+
+        <script type="text/javascript">
+
+            //$.fn.dataTable.ext.errMode = 'throw';
+            $.fn.dataTable.ext.errMode = function(s,h,m){}
+
+
+
+function getQueryString(name) {
+    let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+    let r = window.location.search.substr(1).match(reg);
+    if (r != null) {
+        return unescape(r[2]);
+    };
+    return '';
+ }
+
+	    $(document).ready(function() {
+                $('#alarm_table').DataTable( {
+                    "pageLength": 200,
+                    "serverSide": true, 
+                    "paging": true,    // 是否开启分页功能(默认开启)
+                    'info': true,      // 是否显示分页的统计信息(默认开启)
+                    "searching":true,  // 是否开启搜索功能(默认开启)
+                    "ordering": true,  // 是否开启排序功能(默认开启)
+                    //"order":[ [11,'asc'] ], // 设置默认排序的表格列[参数1是表格列的下标，从0开始] 升序
+                    "order":[ [11,'desc'] ], // 设置默认排序的表格列[参数1是表格列的下标，从0开始] 降序
+                    "stateSave": true,      // 是否保存当前datatables的状态(刷新后当前保持状态)
+                    "processing": true,     // 显示处理中的字样[数量多的时候提示用户在处理中](默认开启)
+                    "serverSide": true,    // 是否开启服务器模式 // false时，会一次性查询所有的数据，dataTables帮我们完成分页等。// true时，点击分页页码就会每次都到后台提取数据。
+
+                    "ajax": function (data, callback, settings) {
+                        //封装请求参数
+                        var page = (data.start / data.length)+1;//当前页码
+                        var limit = data.length;
+                        var end = Date.now();
+                        var begin = end - 1 * 60 * 60 * 1000;
+                        console.log(page);
+                        console.log(limit);
+                        //ajax请求数据
+                        $.ajax({
+                            "type" : "GET",
+                            // "url" : "/api/web/packet?" + "dest_node_id=" + getQueryString("dest_node_id") + "&limit=" + limit + "&page=" + page,
+                            // /api/web/system_alarm_info/?public_ip_port=127.0.0.1:9000&root=01000&priority=0,1,2&begin=1509349430493&end=1508943893990
+                            "url" : "/api/web/system_alarm_info?" + "public_ip_port=" + getQueryString("public_ip_port") + "&priority=" +getQueryString("priority") + "&begin=" + begin + "&end=" + end  + "&limit=" + limit + "&page=" + page,
+                            cache: false,  //禁用缓存
+                            //data: param,  //传入组装的参数
+                            dataType: "json",
+                            success: function (result) {
+                                    //封装返回数据
+                                    var returnData = {};
+                                    returnData.draw = data.draw;//这里直接自行返回了draw计数器,应该由后台返回
+                                    returnData.recordsTotal = result.total;//返回数据全部记录
+                                    returnData.recordsFiltered = result.total;//后台不实现过滤功能，每次查询均视作全部结果
+                                    //returnData.data = result.results;//返回的数据列表
+                                    //调用DataTables提供的callback方法，代表数据已封装完成并传回DataTables进行渲染
+                                    //此时的数据需确保正确无误，异常判断应在执行此回调前自行处理完毕
+                                <th>id</th>
+                                <th bgcolor="#ff0000">priority</th>
+                                <th>ip</th>
+                                <th>rootid</th>
+                                <th>alarm_info</th>
+                                <th>timestamp</th>
+
+                                var final_data = new Array();
+                                for (var i =0; i < result['results']['system_alarm_info'].length; ++i) {
+                                    var item = result['results']['system_alarm_info'][i];
+                                    var new_item = {};
+                                    new_item['id'] = item['id'];
+                                    new_item['priority'] = item['priority'];
+                                    new_item['ip'] = '<a href="/alarm.html?public_ip_port='+item['public_ip_port']+ '&priority=' + item['priority'] + '">'+ item['public_ip_port']  + '</a>';
+                                    new_item['rootid'] = '<a href="/alarm.html?public_ip_port='+item['public_ip_port']+ '&priority=' + item['priority']  + '">'+ item['root'].substring(0,7)+"..."+item['root'].substring(66,72) + '</a>';
+                                    new_item['alarm_info'] = item['alarm_info'];
+                                    // using GMT+0800
+                                    var tmp_cst_date = new Date(item['send_timestamp']);
+                                    new_item['timestamp'] = tmp_cst_date.toString().substring(4,24);
+                                    final_data.push(new_item);
+                                }
+                                   returnData.data = final_data;
+
+                                    callback(returnData);
+                            } // end success
+
+                        });
+                    }, // end "ajax"
+                    "columns": [
+                        { "data": "id" },
+                        { "data": "priority" },
+                        { "data": "ip" },
+                        { "data": "rootid" },
+                        { "data": "alarm_info" },
+                        { "data": "timestamp" }
+                    ]
+
+                } ); // end of $('#alarm_table').DataTable( {
+
+} ); // end of $(document).ready(function() {
+
+        </script>
+
+
+</body>
+</html>
+
