@@ -247,10 +247,11 @@ class NetworkSizeAlarmConsumer(object):
                 return  False
             tmp_keys = copy.deepcopy(list(self.node_info_.get(node_ip).keys()))
             for k in tmp_keys:
-                if k != 'public_ip_port':
-                    # just keep {'public_ip_port':node_ip}
+                if k != 'public_ip_port' and k != 'root':
                     self.node_info_[node_ip].pop(k)
-            slog.warn('root_node_id:{0} {1} down down down!!!'.format(node_id, node_ip))
+            # just keep {'public_ip_port':node_ip, 'root': node_id, 'status':xx}
+            self.node_info_[node_ip]['status'] = 'offline'
+            slog.warn('root_node_id:{0} {1} down down down!!! mark status offline'.format(node_id, node_ip))
             return True
 
         if node_id_status == 'remove':
@@ -280,6 +281,9 @@ class NetworkSizeAlarmConsumer(object):
         if self.node_info_.get('public_ip_port') != node_ip:
             if not node_ip.startswith('127.0.0'):
                 self.node_info_['public_ip_port'] = node_ip
+
+        # node_ip already in self.node_info_
+        self.node_info_[node_ip]['status'] = 'online' 
         if net_type == 'root':
             self.node_info_[node_ip][net_type] = node_id
         else:
