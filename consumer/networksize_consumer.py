@@ -310,7 +310,7 @@ class NetworkSizeAlarmConsumer(object):
         for k in copy.deepcopy(list(value.keys())):
             if not value.get(k):
                 value.pop(k)
-            if k in ['rec', 'zec', 'edg', 'arc', 'adv', 'val']
+            if k in ['rec', 'zec', 'edg', 'arc', 'adv', 'val']:
                 value[k] = json.dumps(value.get(k))
         self.node_info_sql_.update_insert_to_db(value)
         slog.info("dump node_info to db:{0}".format(json.dumps(value)))
