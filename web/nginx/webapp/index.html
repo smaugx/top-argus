@@ -227,6 +227,8 @@ function sleep(d){
                         results = response['results']
                         node_info = results['node_info']
                         node_size = results['node_size']
+                        max_node_size = results['max_node_size']
+                        var offline = '<a href="/api/web/node_info/?status=offline" style="color:red;font-weight:bold">' + max_node_size + '</a>'
 
                         var real_data = new Array();
                         var country_map = {};
@@ -249,7 +251,7 @@ function sleep(d){
                             real_data.push(item);
                         }
 
-                        var rn_pie = get_pie('主网物理节点分布(总数:' + total_real_node + ")", '国家占比', real_data, null);
+                        var rn_pie = get_pie('主网物理节点分布(总数:' + total_real_node + " 历史最大总数:" + offline + ")", '国家占比', real_data, null);
 
                         // 构建图表
                         var real_node_chart = Highcharts.chart(divname, rn_pie);

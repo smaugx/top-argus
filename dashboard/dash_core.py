@@ -373,14 +373,15 @@ class Dash(object):
                 }
         cols = None
         if data.get('simple') == 'true':
-            cols = 'public_ip_port,root,status'
+            cols = 'public_ip_port,status'
+        print(cols)
         vs,total = [],0
         vs,total = self.node_info_sql_.query_from_db(data, cols = cols)
         if not vs:
             slog.debug('node_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
         for i in range(0, len(vs)):
             for k,v in vs[i].items():
-                if k in ['rec', 'zec', 'edg', 'arc', 'adv', 'val']:
+                if k in ['rec', 'zec', 'edg', 'arc', 'adv', 'val'] and v:
                     vs[i][k] = json.loads(v)
 
         tend = int(time.time() * 1000)
