@@ -406,10 +406,10 @@ def system_cron_info_query():
     network_id       = request.args.get('network_id')        or None
     cpu              = request.args.get('cpu')               or 'true'
     mem              = request.args.get('mem')               or 'false'
-    recv_bandwidth   = request.args.get('rband')             or 'false'
-    send_bandwidth   = request.args.get('sband')             or 'false'
-    recv_packet      = request.args.get('rpacket')           or 'false'
-    send_packet      = request.args.get('spacket')           or 'false'
+    recv_bandwidth   = request.args.get('recv_bandwidth')    or 'false'
+    send_bandwidth   = request.args.get('send_bandwidth')    or 'false'
+    recv_packet      = request.args.get('recv_packet')       or 'false'
+    send_packet      = request.args.get('send_packet')       or 'false'
 
     begin            = request.args.get('begin')             or (tnow - 1 * 60 * 60 * 1000)  # latest 1 hour
     end              = request.args.get('end')               or tnow
