@@ -147,8 +147,10 @@ CREATE TABLE IF NOT EXISTS system_cron_info_table(
                 net9   INT(1) unsigned DEFAULT 0, /* 0 is not in this network, 1 is in this network */
                 net10  INT(1) unsigned DEFAULT 0, /* 0 is not in this network, 1 is in this network */
                 send_timestamp bigint(20) unsigned DEFAULT 0, /* cron job, min step usually 1 min */
-                cpu INT(10)  unsigned DEFAULT 0,
-                bandwidth INT(10)  unsigned DEFAULT 0,  /* Kb/s */
+                cpu INT(3)  unsigned DEFAULT 0,  /* % */
+                mem INT(3)  unsigned DEFAULT 0,  /* % */
+                send_bandwidth INT(10)  unsigned DEFAULT 0,  /* Kb/s */
+                recv_bandwidth INT(10)  unsigned DEFAULT 0,  /* Kb/s */
                 send_packet INT(10)  unsigned DEFAULT 0,
                 recv_packet INT(10)  unsigned DEFAULT 0,
                 PRIMARY KEY (id),

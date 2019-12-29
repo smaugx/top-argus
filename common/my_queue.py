@@ -57,7 +57,7 @@ class RedisQueue(object):
             self.myredis.sadd(self.all_queue_keys, qkey_net)
             self.all_queue_keys_set.add(qkey_net)
 
-            qkey_pro = '{0}:progress:{1}'.format(self.queue_key_base, i)
+            qkey_pro = '{0}:system:{1}'.format(self.queue_key_base, i)
             self.myredis.sadd(self.all_queue_keys, qkey_pro)
             self.all_queue_keys_set.add(qkey_pro)
 
@@ -79,7 +79,7 @@ class RedisQueue(object):
             if network_id.startswith('010000'):
                 network_id = '010000'
             msg_hash = int(int(hashlib.sha256(network_id.encode('utf-8')).hexdigest(), 16) % 10**8)
-        elif alarm_type == 'progress':
+        elif alarm_type == 'system':
             node_ip = '127.0.0.1:9000'
             msg_hash = int(int(hashlib.sha256(node_ip.encode('utf-8')).hexdigest(), 16) % 10**8)
             msg_hash = random.randint(0,10000)
