@@ -415,7 +415,7 @@ class SystemAlarmInfoSql(Bean):
 # store network_id to network_num relationship 
 class NetworkIdNumSql(Bean):
     _tbl = 'network_id_num_table'
-    _cols = 'network_id, network_type, network_num'
+    _cols = 'network_num, network_id, network_type'
 
     def __init__(self):
         return

@@ -191,6 +191,16 @@ class NetworkSizeAlarmConsumer(object):
             slog.warn('load network_id_num from db failed or empty')
             return False
         for item in vs:
+            # just for safety check
+            network_id = item.get('network_id')
+            network_num = item.get('network_num')
+            if network_id in self.network_id_num_:
+                if self.network_id_num_.get(network_id).get('network_num') != network_num:
+                    slog.warn('load network_id_num from db goes wrong, db_network_num:{0} not eq cache_network_num:{1}'.format(network_num, self.network_id_num_.get(network_id).get('network_num')))
+                    slog.warn('load network_id_num from db goes wrong, db_network_num:{0} not eq cache_network_num:{1}'.format(network_num, self.network_id_num_.get(network_id).get('network_num')))
+                    slog.warn('load network_id_num from db goes wrong, db_network_num:{0} not eq cache_network_num:{1}'.format(network_num, self.network_id_num_.get(network_id).get('network_num')))
+                    sys.exit(-1)
+                
             self.network_id_num_[item.get('network_id')] = item
 
         slog.info('load network_id_num from db success:{0}'.format(json.dumps(self.network_id_num_)))
@@ -229,6 +239,8 @@ class NetworkSizeAlarmConsumer(object):
                 }
         self.network_id_num_sql_.insert_to_db(data)
         slog.info('dump network_id_num to db:{0}'.format(json.dumps()))
+
+        self.load_db_network_id_num()
         return
 
     def dump_db_networksize(self):

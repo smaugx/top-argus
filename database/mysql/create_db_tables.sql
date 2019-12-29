@@ -115,11 +115,11 @@ CREATE TABLE IF NOT EXISTS system_alarm_info_table(
 */
 DROP TABLE IF EXISTS network_id_num_table;
 CREATE TABLE IF NOT EXISTS network_id_num_table(
+                network_num INT(10) unsigned NOT NULL AUTO_INCREMENT,
                 network_id VARCHAR(20) NOT NULL,
                 network_type VARCHAR(3) NOT NULL, /* rec/zec/edg/arc/adv/val */
-                network_num INT(10) unsigned NOT NULL AUTO_INCREMENT,
-                PRIMARY KEY (network_id),
-                INDEX (network_type, network_num)
+                PRIMARY KEY (network_num),
+                INDEX (network_id,network_type)
 )
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;
