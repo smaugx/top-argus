@@ -473,6 +473,12 @@ class Dash(object):
             cols += ',cpu'
             cols_list.append('cpu')
 
+        tmp_value = {}
+        for k in cols_list:  # {mem:xx,cpu:xx,send_bandwidth:xx....}
+            tmp_value[k] = 0
+            results[k] = []
+        tmp_value['count'] = 0
+
         network_num = None
         if data.get('network_id'):
             network_id = data.get('network_id')[:17]
@@ -481,7 +487,7 @@ class Dash(object):
 
             if network_id not in self.network_id_num_:
                 slog.warn('can not find network_num of network_id:{0}'.format(network_id))
-                return None
+                return results
             network_num = self.network_id_num_.get(network_id).get('network_num')
             slog.debug('get network_num:{0} of network_id:{1}'.format(network_num, network_id))
 
@@ -493,15 +499,9 @@ class Dash(object):
         vs,total = self.system_cron_info_sql_.query_from_db(data, cols = cols, page = page, limit = limit)
         if not vs:
             slog.debug('system_cron_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
-            return None
+            return results
 
         print('query fom db size;{0}'.format(len(vs)))
-        tmp_value = {}
-        for k in cols_list:  # {mem:xx,cpu:xx,send_bandwidth:xx....}
-            tmp_value[k] = 0
-            results[k] = []
-        tmp_value['count'] = 0
-
         for item in vs:
             send_timestamp = item.get('send_timestamp')
             if send_timestamp not in tmp_result:

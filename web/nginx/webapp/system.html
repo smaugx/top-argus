@@ -9,10 +9,7 @@
         <!-- 引入 echarts.js -->
         <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
         <script type="text/javascript" src="http://cdn.highcharts.com.cn/highcharts/highcharts.js"></script>
-        <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
-        <script type="text/javascript" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
-        <link rel=stylesheet type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
-         <link rel="stylesheet" type="text/css" href="css/dmaku2.css" />
+ <link rel="stylesheet" type="text/css" href="css/dmaku2.css" />
     </head>
     
     <body>
@@ -56,24 +53,187 @@
                                     <p class="navi_title"><a href="/system.html">系统情况</a></p>
                                 </span>
                                 <span>
-                                        <p class="navi_title"><a href="/about.html">关于</a></p>
+                                    <p class="navi_title"><a href="/about.html">关于</a></p>
                                 </span>
                         </div>
                 </div>
         </div>
 
 
-<div class="main_body">
-<div class="system_body">
-</div>
-</div>
+    <div class="main_body">
+
+        <div class="line">
+        <div id="container3"></div>
+        </div>
 
 </div>
+
 
 
         <script type="text/javascript">
+Highcharts.setOptions({ global: { useUTC: false } });
+/*
+            // 创建渐变色
+            Highcharts.getOptions().colors = Highcharts.map(Highcharts.getOptions().colors, function (color) {
+            	return {
+            		radialGradient: { cx: 0.5, cy: 0.3, r: 0.7 },
+            		stops: [
+            			[0, color],
+            			[1, Highcharts.Color(color).brighten(-0.3).get('rgb')] // darken
+            		]
+            	};
+            });
+*/
+        Highcharts.setOptions({ global: { useUTC: false } });
+
+            function get_pie(real_text, real_subtext, real_data, network_map) {
+                        console.log(network_map);
+                var chart = {
+                    title: {
+                        text: real_text 
+                    },
+                    tooltip: {
+                        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+                    },
+                    plotOptions: {
+                        pie: {
+                            allowPointSelect: true,
+                            cursor: 'pointer',
+                            dataLabels: {
+                                enabled: true,
+                                format: '<b>{point.name}</b>: {point.y:.1f} ',
+                                style: {
+                                    color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                                },
+                                connectorColor: 'silver'
+                            },
+                            events: {
+                                click: function(e) {
+                                           if (network_map == null) {
+                                               return;
+                                           }
+                                           var network_id = network_map[e.point.name];
+                                           console.log(network_id);
+                            location.href = "/network.html?network_id=" + network_id;
+                                    //window.open(e.point.url);
+                                    //这里的url要后面的data里给出
+                                    }
+                            }
+                        } // end pie
+                    },
+                    series: [{
+                        type: 'pie',
+                        name: real_subtext,
+                        data: real_data
+                    }]
+                };
+                return chart;
+            }
 
 
+
+            function update_system_cron(divname) {
+                var end = Date.now();
+                var begin = end - 60 * 60 * 1000;
+                $.ajax({
+                    cache: false,
+                    type: "GET",
+                    url: "/api/web/system_cron_info?begin=" + begin + "&end=" + end,
+                    data: null,
+                    dataType: "json",
+                    async: false,
+                    error: function(request) {
+                        alert("发送请求失败！");
+                    },
+                    success: function(response) {
+
+                        results = response['results']['cpu']
+                        var data = results
+                        //console.log(data)
+
+                        var hchart = Highcharts.chart(divname, {
+                            chart: {
+                                zoomType: 'x'
+                            },
+                            title: {
+                                text: '全网 CPU 走势图'
+                            },
+                            subtitle: {
+                                text: document.ontouchstart === undefined ? '鼠标拖动可以进行缩放': '手势操作进行缩放'
+                            },
+                            xAxis: {
+                                type: 'datetime',
+                                dateTimeLabelFormats: {
+                                    millisecond: '%H:%M:%S.%L',
+                                    second: '%H:%M:%S',
+                                    minute: '%H:%M',
+                                    hour: '%H:%M',
+                                    day: '%m-%d',
+                                    week: '%m-%d',
+                                    month: '%Y-%m',
+                                    year: '%Y'
+                                }
+                            },
+                            tooltip: {
+                                dateTimeLabelFormats: {
+                                    millisecond: '%H:%M:%S.%L',
+                                    second: '%H:%M:%S',
+                                    minute: '%H:%M',
+                                    hour: '%H:%M',
+                                    day: '%Y-%m-%d',
+                                    week: '%m-%d',
+                                    month: '%Y-%m',
+                                    year: '%Y'
+                                }
+                            },
+                            yAxis: {
+                                title: {
+                                    text: 'CPU(%)'
+                                }
+                            },
+                            legend: {
+                                enabled: false
+                            },
+                            plotOptions: {
+                                area: {
+                                    fillColor: {
+                                        linearGradient: {
+                                            x1: 0,
+                                            y1: 0,
+                                            x2: 0,
+                                            y2: 1
+                                        },
+                                        stops: [[0, Highcharts.getOptions().colors[0]], [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]]
+                                    },
+                                    marker: {
+                                        radius: 2
+                                    },
+                                    lineWidth: 1,
+                                    states: {
+                                        hover: {
+                                            lineWidth: 1
+                                        }
+                                    },
+                                    threshold: null
+                                }
+                            },
+                            series: [{
+                                type: 'area',
+                                name: '平均 CPU(%)',
+                                data: data
+                            }]
+                        });
+
+                    }
+
+                });
+            }
+
+            async function update_system_cron_exp(divname) {
+                await update_system_cron(divname);
+            }
+
+            update_system_cron_exp('container3');
         </script>
     </body>
 
