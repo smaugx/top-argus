@@ -417,6 +417,28 @@ class NetworkSizeAlarmConsumer(object):
         slog.debug('insert system_alarm_info to db:{0}'.format(json.dumps(system_alarm_info)))
         return
 
+    def get_network_num_of_ip(self, public_ip_port):
+        result = []
+        # key is public_ip_port, value is {'public_ip_port':'127.0.0.1:9000','rec':[],'zec':[],....,'val':[]} 
+        self.node_info_  = {}
+        # key is network_id, value is {network_id: network_id, network_type: (rec/zec/edg/arc/adv/val), network_num:1~10}
+        self.network_id_num_ = {}
+
+        if not self.node_info_.get(public_ip_port):
+            return result 
+        for net_choice in ['rec', 'zec','edg', 'arc', 'adv', 'val']:
+            net_id_list = self.node_info_.get(public_ip_port).get(net_choice)
+            if not net_id_list:
+                continue
+            for node_id in net_id_list:
+                network_id = node_id[:17]  # head 8 * 2 bytes
+                if not self.network_id_num_.get(network_id):
+                    continue
+                network_num = self.network_id_num_.get(network_id).get('network_num')
+                result.append(network_num)
+        slog.debug('get_network_num:{0} of ip:{1}'.format(josn.dumps(result), public_ip_port))
+        return result
+
     # {"alarm_type": "system", "alarm_content": {"cpu": 7, "recv_bandwidth": 643, "send_bandwidt": 1551, "recv_packet": 384, "send_packet": 430, "send_timestamp": 1577615964000, "public_ip_port": "159.65.134.173:9000"}}
     def system_cron_alarm(self, content):
         now = (time.time() * 1000)
@@ -428,6 +450,13 @@ class NetworkSizeAlarmConsumer(object):
         if content.get('send_timestamp') % 60 * 1000 != 0:
             slog.warn('system_cron_alarm send_timestamp:{0} invalid'.format(content.get('send_timestamp')))
             return
+        network_num_result = self.get_network_num_of_ip(content.get('public_ip_port'))
+        for num in network_num_result:
+            if num < 1 or num > 10:
+                slog.warn('network_num:{0} invalid'.foramt(num))
+                continue
+            db_net_field = 'net{0}'.format(num)
+            content[db_net_field] = 1
 
         self.system_cron_info_sql_.insert_to_db(content)
         slog.debug('insert system_cron_info to db:{0}'.format(json.dumps(content)))
