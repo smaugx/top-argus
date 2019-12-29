@@ -62,9 +62,30 @@
 
     <div class="main_body">
 
-        <div class="line">
+        <div class="line avg_cpu">
         <div id="container3"></div>
         </div>
+
+        <div class="line avg_mem">
+        <div id="container4"></div>
+        </div>
+
+        <div class="line avg_send_bandwidth">
+        <div id="container5"></div>
+        </div>
+
+        <div class="line avg_recv_bandwidth">
+        <div id="container6"></div>
+        </div>
+
+        <div class="line avg_send_packet">
+        <div id="container7"></div>
+        </div>
+
+        <div class="line avg_recv_packet">
+        <div id="container8"></div>
+        </div>
+
 
 </div>
 
@@ -132,13 +153,14 @@ Highcharts.setOptions({ global: { useUTC: false } });
 
 
 
-            function update_system_cron(divname) {
+            function update_system_cron(divname, name) {
+                var big_title = '全网 ' + name + ' 走势图';
                 var end = Date.now();
                 var begin = end - 60 * 60 * 1000;
                 $.ajax({
                     cache: false,
                     type: "GET",
-                    url: "/api/web/system_cron_info?begin=" + begin + "&end=" + end,
+                    url: "/api/web/system_cron_info?" + name + "=true&begin=" + begin + "&end=" + end,
                     data: null,
                     dataType: "json",
                     async: false,
@@ -156,7 +178,7 @@ Highcharts.setOptions({ global: { useUTC: false } });
                                 zoomType: 'x'
                             },
                             title: {
-                                text: '全网 CPU 走势图'
+                                text: big_title
                             },
                             subtitle: {
                                 text: document.ontouchstart === undefined ? '鼠标拖动可以进行缩放': '手势操作进行缩放'
@@ -188,7 +210,7 @@ Highcharts.setOptions({ global: { useUTC: false } });
                             },
                             yAxis: {
                                 title: {
-                                    text: 'CPU(%)'
+                                    text: name + '(%)'
                                 }
                             },
                             legend: {
@@ -219,7 +241,7 @@ Highcharts.setOptions({ global: { useUTC: false } });
                             },
                             series: [{
                                 type: 'area',
-                                name: '平均 CPU(%)',
+                                name: '平均 ' + name + '(%)',
                                 data: data
                             }]
                         });
@@ -229,11 +251,16 @@ Highcharts.setOptions({ global: { useUTC: false } });
                 });
             }
 
-            async function update_system_cron_exp(divname) {
-                await update_system_cron(divname);
+            async function update_system_cron_exp(divname, name) {
+                await update_system_cron(divname, name);
             }
 
-            update_system_cron_exp('container3');
+            update_system_cron_exp('container3', 'cpu');
+            update_system_cron_exp('container4', 'mem');
+            update_system_cron_exp('container5', 'sband');
+            update_system_cron_exp('container6', 'rband');
+            update_system_cron_exp('container7', 'spacket');
+            update_system_cron_exp('container8', 'rpacket');
         </script>
     </body>
 
