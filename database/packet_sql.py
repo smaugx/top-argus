@@ -344,7 +344,6 @@ class NodeInfoSql(Bean):
         return
 
 
-
 # store system_alarm_info 
 class SystemAlarmInfoSql(Bean):
     _tbl = 'system_alarm_info_table'
@@ -410,6 +409,120 @@ class SystemAlarmInfoSql(Bean):
     @classmethod
     def update_case(cls,data=None, where=''):
         print('update table system_alarm_info_table: %s where:%s' % (json.dumps(data),where))
+        return cls.update_dict(data = data, where = where )
+
+
+# store network_id to network_num relationship 
+class NetworkIdNumSql(Bean):
+    _tbl = 'network_id_num_table'
+    _cols = 'network_id, network_type, network_num'
+
+    def __init__(self):
+        return
+
+    @classmethod
+    def query_from_db(cls,data,cols = None,page = 1, limit = 200):
+        sbegin = int(time.time() * 1000)
+        where ,vs,total = [],[],0
+
+        if data.get('network_id'):
+            where.append(' `network_id` = "{0}" '.format(data.get('network_id')))
+
+        # network_type choices_list is [rec,zec,edg,arc,adv,val]
+        if data.get('network_type'):
+            where.append(' `network_type` = "{0}" '.format(data.get('network_type')))
+
+        if data.get('network_num'):
+            where.append(' `network_num` = {0} '.format(data.get('network_num')))
+
+        where = ' and '.join(where)
+        vs,total = [],0
+
+        vs = cls.select_vs(cols = cols, where=where, page=page, limit=limit, order='')
+        total = cls.total(where = where )
+        send = int(time.time() * 1000)
+        slog.debug('select * from %s where %s,total: %s taking:%d ms' % (cls._tbl,where,total,(send - sbegin)))
+        return vs, total
+
+    @classmethod
+    def ignore_insert_to_db(cls,data):
+        return cls.ignore_insert(data = data)
+
+    @classmethod
+    def update_insert_to_db(cls,data):
+        return cls.update_insert(data = data)
+
+    @classmethod
+    def insert_to_db(cls,data):
+        return cls.insert(data = data)
+    
+    @classmethod
+    def update_incry(cls,clause):
+        print('update table %s: %s ' % (cls._tbl,clause))
+        return cls.update(clause = clause)
+
+    @classmethod
+    def update_case(cls,data=None, where=''):
+        print('update table network_id_num_table: %s where:%s' % (json.dumps(data),where))
+        return cls.update_dict(data = data, where = where )
+
+
+#  cron job for alarm: cpu、bandwidth...
+class SystemCronInfoSql(Bean):
+    _tbl = 'system_cron_info_table'
+    _cols = 'id,public_ip_port,net1,net2,net3,net4,net5,net6,net7,net8,net9,net10,send_timestamp,cpu,bandwidth,send_packet,recv_packet'
+
+    def __init__(self):
+        return
+
+    @classmethod
+    def query_from_db(cls,data,cols = None,page = 1, limit = 200):
+        sbegin = int(time.time() * 1000)
+        where ,vs,total = [],[],0
+
+        if data.get('public_ip_port'):
+            where.append(' `public_ip_port` = "{0}" '.format(data.get('public_ip_port')))
+
+        # attention: max net size is 10
+        for i in range(1,11):
+            net_sql_field = 'net{0}'.format(i)  # net1, net2...net10
+            if data.get(net_sql_field):
+                where.append(' `{0}` = {1} '.format(net_sql_field, data.get(net_sql_field)))
+
+        if data.get('begin'):
+            where.append(' `send_timestamp` >= {0} '.format(data.get('begin')))
+        if data.get('end'):
+            where.append(' `send_timestamp` <= {0} '.format(data.get('end')))
+
+        where = ' and '.join(where)
+        vs,total = [],0
+
+        vs = cls.select_vs(cols = cols, where=where, page=page, limit=limit, order=' send_timestamp desc ')
+        total = cls.total(where = where )
+        send = int(time.time() * 1000)
+        slog.debug('select * from %s where %s,total: %s taking:%d ms' % (cls._tbl,where,total,(send - sbegin)))
+        return vs, total
+
+    @classmethod
+    def ignore_insert_to_db(cls,data):
+        return cls.ignore_insert(data = data)
+
+    @classmethod
+    def update_insert_to_db(cls,data):
+        return cls.update_insert(data = data)
+
+    @classmethod
+    def insert_to_db(cls,data):
+        return cls.insert(data = data)
+    
+    @classmethod
+    def update_incry(cls,clause):
+        print('update table %s: %s ' % (cls._tbl,clause))
+        return cls.update(clause = clause)
+
+    @classmethod
+    def update_case(cls,data=None, where=''):
+        print('update table system_cron_info_table: %s where:%s' % (json.dumps(data),where))
         return cls.update_dict(data = data, where = where )
 
 

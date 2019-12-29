@@ -110,20 +110,50 @@ CREATE TABLE IF NOT EXISTS system_alarm_info_table(
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;
 
+/*
+   网络id 到数字的映射，从 1 开始递增
+*/
+DROP TABLE IF EXISTS network_id_num_table;
+CREATE TABLE IF NOT EXISTS network_id_num_table(
+                network_id VARCHAR(20) NOT NULL,
+                network_type VARCHAR(3) NOT NULL, /* rec/zec/edg/arc/adv/val */
+                network_num INT(10) unsigned NOT NULL AUTO_INCREMENT,
+                PRIMARY KEY (network_id),
+                INDEX (network_type, network_num)
+)
+        ENGINE =InnoDB
+        DEFAULT CHARSET =utf8;
+
+/* 
+  为了标识每一条上报信息来源节点所属的网络，支持最大到 10 号网络;
+  即一个节点最多支持同时有 10 种角色, 表字段默认最大添加标记 10 种网络，格式为 net[x]，其中 x 范围 [1,10], 比如 net1, net2...net10;
+  最大支持 10 种网络的原因是： 1 rec + 1 zec + 1 edg + 1 arc + 2 adv + 4 val;
+  注意，如果网络规模超过 10 个，则会出错，实际使用时一般不会配置这么多（超过10） 的网络;
+*/
+
 /* 系统定时采集信息, 比如 cpu/bandwidth 等*/
 DROP TABLE IF EXISTS system_cron_info_table;
 CREATE TABLE IF NOT EXISTS system_cron_info_table(
                 id INT(10) unsigned NOT NULL AUTO_INCREMENT,
                 public_ip_port VARCHAR(25) NOT NULL,
+                net1   INT(1) unsigned DEFAULT 0, /* 0 is not in this network, 1 is in this network */
+                net2   INT(1) unsigned DEFAULT 0, /* 0 is not in this network, 1 is in this network */
+                net3   INT(1) unsigned DEFAULT 0, /* 0 is not in this network, 1 is in this network */
+                net4   INT(1) unsigned DEFAULT 0, /* 0 is not in this network, 1 is in this network */
+                net5   INT(1) unsigned DEFAULT 0, /* 0 is not in this network, 1 is in this network */
+                net6   INT(1) unsigned DEFAULT 0, /* 0 is not in this network, 1 is in this network */
+                net7   INT(1) unsigned DEFAULT 0, /* 0 is not in this network, 1 is in this network */
+                net8   INT(1) unsigned DEFAULT 0, /* 0 is not in this network, 1 is in this network */
+                net9   INT(1) unsigned DEFAULT 0, /* 0 is not in this network, 1 is in this network */
+                net10  INT(1) unsigned DEFAULT 0, /* 0 is not in this network, 1 is in this network */
+                send_timestamp bigint(20) unsigned DEFAULT 0, /* cron job, min step usually 1 min */
                 cpu INT(10)  unsigned DEFAULT 0,
                 bandwidth INT(10)  unsigned DEFAULT 0,  /* Kb/s */
                 send_packet INT(10)  unsigned DEFAULT 0,
                 recv_packet INT(10)  unsigned DEFAULT 0,
-                send_timestamp bigint(20) unsigned DEFAULT 0,
                 PRIMARY KEY (id),
-                INDEX (public_ip_port,send_timestamp)
+                INDEX (public_ip_port,net1,net2,net3,net4,net5,net6,net7,net8,net9,net10,send_timestamp)
 )
         ENGINE =InnoDB
         DEFAULT CHARSET =utf8;
-
 

@@ -8,7 +8,7 @@ import time
 import queue
 import copy
 import threading
-from database.packet_sql import NetworkInfoSql, NodeInfoSql,SystemAlarmInfoSql
+from database.packet_sql import NetworkInfoSql, NodeInfoSql,SystemAlarmInfoSql,NetworkIdNumSql
 from common.slogging import slog
 
 PRIORITY_DICT = {
@@ -26,6 +26,8 @@ class NetworkSizeAlarmConsumer(object):
         self.network_ids_ = {}
         # key is public_ip_port, value is {'public_ip_port':'127.0.0.1:9000','rec':[],'zec':[],....,'val':[]} 
         self.node_info_  = {}
+        # key is network_id, value is {network_id: network_id, network_type: (rec/zec/edg/arc/adv/val), network_num:1~10}
+        self.network_id_num_ = {}
 
         self.consume_step_ = 30
 
@@ -38,11 +40,15 @@ class NetworkSizeAlarmConsumer(object):
         self.system_alarm_info_sql_ = SystemAlarmInfoSql()
         self.node_info_sql_ = NodeInfoSql()
         self.node_info_sql_.delete_db(data = {})
+        self.network_id_num_sql_ = NetworkIdNumSql()
 
         self.network_info_shm_filename_ = '/dev/shm/topargus_network_info'
         return
 
     def run(self):
+        # attention, do something init
+        self.load_db_network_id_num()
+
         # usually for one consumer , only handle one type
         slog.info('consume_alarm run')
         if self.alarm_env_ == 'test':
@@ -163,6 +169,8 @@ class NetworkSizeAlarmConsumer(object):
                     }
             self.network_ids_[network_id] = network_info
             slog.info('add node_id:{0} to network_id:{1}, new network_id and now size is 1'.format(node_id, network_id))
+
+            self.dump_db_network_id_num(network_id)
             return True
         else:
             for ni in self.network_ids_[network_id]['node_info']:
@@ -175,6 +183,53 @@ class NetworkSizeAlarmConsumer(object):
             return True
 
         return False
+
+    def load_db_network_id_num(self):
+        vs,total = [],0
+        vs, total = self.network_id_num_sql_.query_from_db(data = {})
+        if not vs:
+            slog.warn('load network_id_num from db failed or empty')
+            return False
+        for item in vs:
+            self.network_id_num_[item.get('network_id')] = item
+
+        slog.info('load network_id_num from db success:{0}'.format(json.dumps(self.network_id_num_)))
+        return True
+
+    def dump_db_network_id_num(self, network_id):
+        if network_id.startswith('010000'):
+            return
+        if network_id not in self.network_id_num_:
+            self.load_db_network_id_num()
+
+        if network_id in self.network_id_num_:
+            # already in db
+            return
+
+        net_type = ''
+        if network_id.startswith('6400'):
+            net_type = 'rec'
+        elif network_id.startswith('6500'):
+            net_type = 'zec'
+        elif network_id.startswith('6600'):
+            net_type = 'edg'
+        elif network_id.startswith('6700'):
+            net_type = 'arc'
+        elif network_id.startswith('6800'):
+            net_type = 'adv'
+        elif network_id.startswith('6900'):
+            net_type = 'val'
+        else:
+            slog.warn('not support network_id:{0} for map-num'.format(network_id))
+            return
+
+        data = {
+                'network_id': network_id,
+                'network_type': net_type 
+                }
+        self.network_id_num_sql_.insert_to_db(data)
+        slog.info('dump network_id_num to db:{0}'.format(json.dumps()))
+        return
 
     def dump_db_networksize(self):
         # network_info
