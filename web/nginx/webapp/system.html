@@ -172,9 +172,6 @@ Highcharts.setOptions({ global: { useUTC: false } });
                         results = response['results'][name]
                         var data = results
                         //console.log(data)
-                        if (data.length === 0) {
-                            return;
-                        }
 
                         var hchart = Highcharts.chart(divname, {
                             chart: {
