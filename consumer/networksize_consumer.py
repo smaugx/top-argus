@@ -238,7 +238,7 @@ class NetworkSizeAlarmConsumer(object):
                 'network_type': net_type 
                 }
         self.network_id_num_sql_.insert_to_db(data)
-        slog.info('dump network_id_num to db:{0}'.format(json.dumps()))
+        slog.info('dump network_id_num to db:{0}'.format(json.dumps(data)))
 
         self.load_db_network_id_num()
         return
