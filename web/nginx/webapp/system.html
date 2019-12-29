@@ -169,8 +169,11 @@ Highcharts.setOptions({ global: { useUTC: false } });
                     },
                     success: function(response) {
 
-                        results = response['results']['cpu']
+                        results = response['results'][name]
                         var data = results
+                        if (data.length === 0) {
+                            return;
+                        }
                         //console.log(data)
 
                         var hchart = Highcharts.chart(divname, {
