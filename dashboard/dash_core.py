@@ -10,7 +10,7 @@ import queue
 import copy
 import os
 import threading
-from database.packet_sql import PacketInfoSql, PacketRecvInfoSql, NetworkInfoSql,DropRateInfoSql,NodeInfoSql,SystemAlarmInfoSql
+from database.packet_sql import PacketInfoSql, PacketRecvInfoSql, NetworkInfoSql,DropRateInfoSql,NodeInfoSql,SystemAlarmInfoSql,NetworkIdNumSql,SystemCronInfoSql
 from common.slogging import slog
 import common.sipinfo as sipinfo
 
@@ -27,9 +27,12 @@ class Dash(object):
         self.packet_drop_rate_sql = DropRateInfoSql()
         self.node_info_sql_ = NodeInfoSql()
         self.system_alarm_info_sql_ = SystemAlarmInfoSql()
+        self.network_id_num_sql_ = NetworkIdNumSql()
+        self.system_cron_info_sql_ = SystemCronInfoSql()
 
         self.network_ids_lock_ = threading.Lock()
         self.network_ids_ = {}
+        self.network_id_num_ = {}
 
         self.iplocation_ = {}
         self.iplocation_file_ = '/tmp/.topargus_iplocation'
@@ -422,4 +425,100 @@ class Dash(object):
         results['size'] = len(vs)
         slog.debug('get system_alarm_info ok, size:{0}'.format(len(vs)))
         return results, total
+
+    def load_db_network_id_num(self):
+        vs,total = [],0
+        vs, total = self.network_id_num_sql_.query_from_db(data = {})
+        if not vs:
+            slog.warn('load network_id_num from db failed or empty')
+            return False
+        for item in vs:
+            self.network_id_num_[item.get('network_id')] = item
+
+        slog.info('load network_id_num from db success:{0}'.format(json.dumps(self.network_id_num_)))
+        return True
+
+    # get system_cron_info of one or more public_ip_port
+    def get_system_cron_info(self,data, page = 1, limit = 200):
+        '''
+        data = {
+                'public_ip_port':   public_ip_port,
+                'network_id':       network_id,
+                'begin':            begin,
+                'end':              end
+        }
+        '''
+        tbegin = int(time.time() * 1000)
+        results = {} # key is db_filed:/cpu/mem/band  ; value is list of list [[time,value], [time,value]]
+        tmp_result = {}  # key is timestamp
+        cols = 'public_ip_port,send_timestamp'
+        cols_list = []
+        if data.get('mem') == 'true':
+            cols += ',mem'
+            cols_list.append('mem')
+        if data.get('send_bandwidth') == 'true':
+            cols += ',send_bandwidth'
+            cols_list.append('send_bandwidth')
+        if data.get('recv_bandwidth') == 'true':
+            cols += ',recv_bandwidth'
+            cols_list.append('recv_bandwidth')
+        if data.get('send_packet') == 'true':
+            cols += ',send_packet'
+            cols_list.append('send_packet')
+        if data.get('recv_packet') == 'true':
+            cols += ',recv_packet'
+            cols_list.append('recv_packet')
+
+        if cols.endswith('send_timestamp'):
+            cols += ',cpu'
+            cols_list.append('cpu')
+
+        network_num = None
+        if data.get('network_id'):
+            network_id = data.get('network_id')[:17]
+            if network_id not in self.network_id_num_:
+                self.load_db_network_id_num()
+
+            if network_id not in self.network_id_num_:
+                slog.warn('can not find network_num of network_id:{0}'.format(network_id))
+                return None
+            network_num = self.network_id_num_.get(network_id).get('network_num')
+            slog.debug('get network_num:{0} of network_id:{1}'.format(network_num, network_id))
+
+        if network_num != None:
+            net_field = 'net{0}'.format(network_num)
+            data[net_field] = 1
+
+        vs,total = [],0
+        vs,total = self.system_cron_info_sql_.query_from_db(data, cols = cols, page = page, limit = limit)
+        if not vs:
+            slog.debug('system_cron_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
+            return None
+
+        tmp_value = {}
+        for k in cols_list:  # {mem:xx,cpu:xx,send_bandwidth:xx....}
+            tmp_value[k] = 0
+            results[k] = []
+        tmp_value['count'] = 0
+
+        for item in vs:
+            send_timestamp = item.get('send_timestamp')
+            if send_timestamp not in tmp_result:
+                tmp_result[send_timestamp] = copy.deepcopy(tmp_value)
+            for k in cols_list:
+                tmp_result[send_timestamp][k] += item.get(k)
+
+            tmp_result[send_timestamp]['count']  += 1
+
+        for time,tvalue in tmp_result.items():
+            for name,sumv in tvalue.items():
+                if name == 'count':
+                    continue
+                point = [time, sumv / tvalue['count']]
+                results[name].append(point)
+
+        slog.debug('system_cron result:{0}'.format(json.dumps(results)))
+        tend = int(time.time() * 1000)
+        slog.debug('get_system_cron_info taking:{0} ms'.format(tend - tbegin))
+        return results
 

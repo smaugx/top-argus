@@ -370,7 +370,6 @@ def system_alarm_info_query():
             -1:'没有数据',
             -2: '参数不合法',
             }
-    print('priority:{0}'.format(priority))
     priority_list = []
     if priority:
         tmp_priority_list = priority.split(',')
@@ -389,8 +388,54 @@ def system_alarm_info_query():
             'end':              end
     }
 
-    print('hell')
     results, total = mydash.get_system_alarm_info(data, page= page, limit = limit)
+    if results:
+        ret = {'status':0,'error': status_ret.get(0) , 'results': results, 'total': total}
+        return jsonify(ret)
+    else:
+        ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
+        return jsonify(ret)
+
+# GET /api/web/system_cron_info/?public_ip_port=127.0.0.1:9000&cpu/mem/recv_band/send_band/recv_packet/send_packet=true&network_id=6800&begin=1509349430493&end=1508943893990
+@app.route('/api/web/system_cron_info/', methods = ['GET'])
+@app.route('/api/web/system_cron_info', methods = ['GET'])
+@auth.login_required
+def system_cron_info_query():
+    tnow = int(time.time() * 1000)
+    public_ip_port   = request.args.get('public_ip_port')    or None
+    network_id       = request.args.get('network_id')        or None
+    cpu              = request.args.get('cpu')               or 'true'
+    mem              = request.args.get('mem')               or 'false'
+    recv_bandwidth   = request.args.get('rband')             or 'false'
+    send_bandwidth   = request.args.get('sband')             or 'false'
+    recv_packet      = request.args.get('rpacket')           or 'false'
+    send_packet      = request.args.get('spacket')           or 'false'
+
+    begin            = request.args.get('begin')             or (tnow - 1 * 60 * 60 * 1000)  # latest 1 hour
+    end              = request.args.get('end')               or tnow
+    limit            = request.args.get('limit')             or 200
+    page             = request.args.get('page')              or 1
+
+    status_ret = {
+            0:'OK',
+            -1:'没有数据',
+            -2: '参数不合法',
+            }
+
+    data = {
+            'public_ip_port':   public_ip_port,
+            'network_id':       network_id,
+            'cpu':              cpu,
+            'mem':              mem,
+            'recv_bandwidth':   recv_bandwidth,
+            'send_bandwidth':   send_bandwidth,
+            'recv_packet':      recv_packet,
+            'send_packet':      send_packet,
+            'begin':            begin,
+            'end':              end
+    }
+
+    results, total = mydash.get_system_cron_info(data, page= page, limit = limit)
     if results:
         ret = {'status':0,'error': status_ret.get(0) , 'results': results, 'total': total}
         return jsonify(ret)
