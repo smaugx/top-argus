@@ -28,15 +28,15 @@ def run(alarm_type, alarm_env = 'test'):
     qkey_map = {
             'packet': [],
             'networksize': [],
-            'progress': [],
+            'system': [],
             }
     for qkey in all_queue_key:
         if qkey.find('packet') != -1:
             qkey_map['packet'].append(qkey)
         elif qkey.find('networksize') != -1:
             qkey_map['networksize'].append(qkey)
-        elif qkey.find('progress') != -1:
-            qkey_map['progress'].append(qkey)
+        elif qkey.find('system') != -1:
+            qkey_map['system'].append(qkey)
 
     slog.warn('qkey_map:{0}'.format(json.dumps(qkey_map)))
 
@@ -51,9 +51,9 @@ def run(alarm_type, alarm_env = 'test'):
 
 
     if alarm_type == 'networksize' or alarm_type == 'all':
-        # networksize and progress
         qkey = qkey_map.get('networksize')
-        slog.warn('create consumer for networksize/progress, assign queue_key:{0}'.format(json.dumps(list(qkey))))
+        qkey.extend(qkey_map.get('system'))
+        slog.warn('create consumer for networksize/system, assign queue_key:{0}'.format(json.dumps(list(qkey))))
         consumer = networksize_consumer.NetworkSizeAlarmConsumer(q=mq, queue_key_list = list(qkey), alarm_env = alarm_env)
         consumer_list.append(consumer)
 

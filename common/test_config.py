@@ -55,9 +55,9 @@ PROXY_CONFIG = {
             'sample_rate': 50,  #5%
             'alarm_type': 'networksize',
             },
-        'grep_xtopchain': {
+        'system_cron': {
             'start': 'true',
-            'alarm_type': 'progress',
+            'alarm_type': 'system',
             },
         }
 

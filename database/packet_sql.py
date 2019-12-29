@@ -470,7 +470,7 @@ class NetworkIdNumSql(Bean):
 #  cron job for alarm: cpu、bandwidth...
 class SystemCronInfoSql(Bean):
     _tbl = 'system_cron_info_table'
-    _cols = 'id,public_ip_port,net1,net2,net3,net4,net5,net6,net7,net8,net9,net10,send_timestamp,cpu,bandwidth,send_packet,recv_packet'
+    _cols = 'id,public_ip_port,net1,net2,net3,net4,net5,net6,net7,net8,net9,net10,send_timestamp,cpu,send_bandwidth,recv_bandwidth,send_packet,recv_packet'
 
     def __init__(self):
         return
