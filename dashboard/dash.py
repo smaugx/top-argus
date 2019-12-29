@@ -413,7 +413,7 @@ def system_cron_info_query():
 
     begin            = request.args.get('begin')             or (tnow - 1 * 60 * 60 * 1000)  # latest 1 hour
     end              = request.args.get('end')               or tnow
-    limit            = request.args.get('limit')             or 200
+    limit            = request.args.get('limit')             or 200000
     page             = request.args.get('page')              or 1
 
     status_ret = {
@@ -435,9 +435,9 @@ def system_cron_info_query():
             'end':              end
     }
 
-    results, total = mydash.get_system_cron_info(data, page= page, limit = limit)
+    results= mydash.get_system_cron_info(data, page= page, limit = limit)
     if results:
-        ret = {'status':0,'error': status_ret.get(0) , 'results': results, 'total': total}
+        ret = {'status':0,'error': status_ret.get(0) , 'results': results}
         return jsonify(ret)
     else:
         ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}

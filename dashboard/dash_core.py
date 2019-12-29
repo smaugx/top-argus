@@ -439,7 +439,7 @@ class Dash(object):
         return True
 
     # get system_cron_info of one or more public_ip_port
-    def get_system_cron_info(self,data, page = 1, limit = 200):
+    def get_system_cron_info(self,data, page = 1, limit = 200000):
         '''
         data = {
                 'public_ip_port':   public_ip_port,
@@ -469,7 +469,7 @@ class Dash(object):
             cols += ',recv_packet'
             cols_list.append('recv_packet')
 
-        if cols.endswith('send_timestamp'):
+        if cols.endswith('send_timestamp') or data.get('cpu') == 'true':
             cols += ',cpu'
             cols_list.append('cpu')
 
@@ -495,6 +495,7 @@ class Dash(object):
             slog.debug('system_cron_info_sql query_from_db failed, data:{0}'.format(json.dumps(data)))
             return None
 
+        print('query fom db size;{0}'.format(len(vs)))
         tmp_value = {}
         for k in cols_list:  # {mem:xx,cpu:xx,send_bandwidth:xx....}
             tmp_value[k] = 0
@@ -510,11 +511,11 @@ class Dash(object):
 
             tmp_result[send_timestamp]['count']  += 1
 
-        for time,tvalue in tmp_result.items():
+        for timest,tvalue in tmp_result.items():
             for name,sumv in tvalue.items():
                 if name == 'count':
                     continue
-                point = [time, sumv / tvalue['count']]
+                point = [timest, sumv / tvalue['count']]
                 results[name].append(point)
 
         slog.debug('system_cron result:{0}'.format(json.dumps(results)))
