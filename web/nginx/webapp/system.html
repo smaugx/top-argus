@@ -69,6 +69,10 @@
     <div class="main_body">
 
         <div class="line">
+        <div id="container_net0"></div>
+        </div>
+
+        <div class="line">
         <div id="container_net1"></div>
         </div>
 
@@ -208,12 +212,16 @@ Highcharts.setOptions({ global: { useUTC: false } });
 
 
 
-            function update_system_cron(divname, network_id) {
+            function update_system_cron(divname, network_id, network_type) {
+                var title_prefix = network_type + "(" + network_id + ")  ";
+                if (!network_id) {
+                    title_prefix = '全网 ';
+                }
                 var field = getQueryString('field');
                 if (!field) {
                     field = 'cpu';
                 }
-                var big_title = '全网 ' + field + ' 走势图';
+                var big_title = title_prefix + field + ' 走势图';
                 var end = Date.now();
                 var begin = end - 60 * 60 * 1000;
                 $.ajax({
@@ -310,11 +318,13 @@ Highcharts.setOptions({ global: { useUTC: false } });
                 });
             }
 
-            async function update_system_cron_exp(divname, network_id) {
-                await update_system_cron(divname, network_id);
+            async function update_system_cron_exp(divname, network_id, network_type) {
+                await update_system_cron(divname, network_id, network_type);
             }
 
             function update_system_cron_all() {
+                update_system_cron_exp('container_net0', '', '');
+
                 network_result = get_all_network_num();
                 for (var i = 0; i < network_result.length; ++i) {
                     var network_num  = network_result[i]['network_num'];
@@ -325,9 +335,11 @@ Highcharts.setOptions({ global: { useUTC: false } });
                     console.log(network_type);
                     container_net7;
                     var divname = 'container_net' + (i + 1);
-                    update_system_cron_exp(divname, network_id);
+                    update_system_cron_exp(divname, network_id, network_type);
                 }
             }
+
+            update_system_cron_all();
 
         </script>
     </body>
