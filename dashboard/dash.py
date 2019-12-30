@@ -42,8 +42,8 @@ WITH_RESPONSE_CACHE = True
 # key is route, value is response
 request_cache_map = {}
 
-argus_redis = TopArgusRedis(host= sconfig.REDIS_HOST, port=sconfig.REDIS_PORT, password=sconfig.REDIS_PASS)
-argus_redis.connect()   # connect failed will by None
+topargusredis_obj = TopArgusRedis(host= sconfig.REDIS_HOST, port=sconfig.REDIS_PORT, password=sconfig.REDIS_PASS)
+argus_redis = topargusredis_obj.connect()   # connect failed will by None
 
 mydash = dash_core.Dash()
 myuser = dash_user.User()
