@@ -50,7 +50,13 @@
                                 </span>
 
                                 <span>
-                                    <p class="navi_title"><a href="/system.html">系统情况</a></p>
+                                    <p class="navi_title"><a href="/system.html?cpu=true">系统情况</a></p>
+                                    <p><a href="/system.html?field=cpu">Cpu</a></p>
+                                    <p><a href="/system.html?field=mem">Memory</a></p>
+                                    <p><a href="/system.html?field=send_bandwidth">SendBandwidth</a></p>
+                                    <p><a href="/system.html?field=recv_bandwidth">RecvBandwidth</a></p>
+                                    <p><a href="/system.html?field=send_packet">SendPacket</a></p>
+                                    <p><a href="/system.html?field=recv_packet">RecvPacket</a></p>
                                 </span>
                                 <span>
                                     <p class="navi_title"><a href="/about.html">关于</a></p>
@@ -62,32 +68,47 @@
 
     <div class="main_body">
 
-        <div class="line avg_cpu">
-        <div id="container3"></div>
+        <div class="line">
+        <div id="container_net1"></div>
         </div>
 
-        <div class="line avg_mem">
-        <div id="container4"></div>
+        <div class="line">
+        <div id="container_net2"></div>
         </div>
 
-        <div class="line avg_send_bandwidth">
-        <div id="container5"></div>
+        <div class="line">
+        <div id="container_net3"></div>
         </div>
 
-        <div class="line avg_recv_bandwidth">
-        <div id="container6"></div>
+        <div class="line">
+        <div id="container_net4"></div>
         </div>
 
-        <div class="line avg_send_packet">
-        <div id="container7"></div>
+        <div class="line">
+        <div id="container_net5"></div>
         </div>
 
-        <div class="line avg_recv_packet">
-        <div id="container8"></div>
+        <div class="line">
+        <div id="container_net6"></div>
         </div>
 
+        <div class="line">
+        <div id="container_net7"></div>
+        </div>
 
-</div>
+        <div class="line">
+        <div id="container_net8"></div>
+        </div>
+
+        <div class="line">
+        <div id="container_net9"></div>
+        </div>
+
+        <div class="line">
+        <div id="container_net10"></div>
+        </div>
+
+    </div>
 
 
 
@@ -107,60 +128,98 @@ Highcharts.setOptions({ global: { useUTC: false } });
 */
         Highcharts.setOptions({ global: { useUTC: false } });
 
-            function get_pie(real_text, real_subtext, real_data, network_map) {
-                        console.log(network_map);
-                var chart = {
-                    title: {
-                        text: real_text 
+    function getQueryString(name) {
+        let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        let r = window.location.search.substr(1).match(reg);
+        if (r != null) {
+            return unescape(r[2]);
+        };
+        return '';
+     }
+
+
+    function get_pie(real_text, real_subtext, real_data, network_map) {
+                console.log(network_map);
+        var chart = {
+            title: {
+                text: real_text 
+            },
+            tooltip: {
+                pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+            },
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                        enabled: true,
+                        format: '<b>{point.name}</b>: {point.y:.1f} ',
+                        style: {
+                            color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                        },
+                        connectorColor: 'silver'
                     },
-                    tooltip: {
-                        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
-                    },
-                    plotOptions: {
-                        pie: {
-                            allowPointSelect: true,
-                            cursor: 'pointer',
-                            dataLabels: {
-                                enabled: true,
-                                format: '<b>{point.name}</b>: {point.y:.1f} ',
-                                style: {
-                                    color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-                                },
-                                connectorColor: 'silver'
-                            },
-                            events: {
-                                click: function(e) {
-                                           if (network_map == null) {
-                                               return;
-                                           }
-                                           var network_id = network_map[e.point.name];
-                                           console.log(network_id);
-                            location.href = "/network.html?network_id=" + network_id;
-                                    //window.open(e.point.url);
-                                    //这里的url要后面的data里给出
-                                    }
+                    events: {
+                        click: function(e) {
+                                   if (network_map == null) {
+                                       return;
+                                   }
+                                   var network_id = network_map[e.point.name];
+                                   console.log(network_id);
+                    location.href = "/network.html?network_id=" + network_id;
+                            //window.open(e.point.url);
+                            //这里的url要后面的data里给出
                             }
-                        } // end pie
+                    }
+                } // end pie
+            },
+            series: [{
+                type: 'pie',
+                name: real_subtext,
+                data: real_data
+            }]
+        };
+        return chart;
+    }
+
+            function get_all_network_num() {
+                var network_result = new Array();
+                $.ajax({
+                    cache: false,
+                    type: "GET",
+                    url: "/api/web/network_num/",
+                    data: null,
+                    dataType: "json",
+                    async: false,
+                    error: function(request) {
+                        alert("发送请求失败！");
                     },
-                    series: [{
-                        type: 'pie',
-                        name: real_subtext,
-                        data: real_data
-                    }]
-                };
-                return chart;
+                    success: function(response) {
+                        results = response['results'];
+                        if (results.length === 0) {
+                            alert("get network_num failed");
+                        } else {
+                            network_result = results;
+                        }
+                    }
+                });
+                return network_result;
             }
 
 
 
-            function update_system_cron(divname, name) {
-                var big_title = '全网 ' + name + ' 走势图';
+            function update_system_cron(divname, network_id) {
+                var field = getQueryString('field');
+                if (!field) {
+                    field = 'cpu';
+                }
+                var big_title = '全网 ' + field + ' 走势图';
                 var end = Date.now();
                 var begin = end - 60 * 60 * 1000;
                 $.ajax({
                     cache: false,
                     type: "GET",
-                    url: "/api/web/system_cron_info?" + name + "=true&begin=" + begin + "&end=" + end,
+                    url: "/api/web/system_cron_info?" + field + "=true&network_id=" + network_id + "&begin=" + begin + "&end=" + end,
                     data: null,
                     dataType: "json",
                     async: false,
@@ -169,8 +228,8 @@ Highcharts.setOptions({ global: { useUTC: false } });
                     },
                     success: function(response) {
 
-                        results = response['results'][name]
-                        var data = results
+                        results = response['results'][field];
+                        var data = results;
                         //console.log(data)
 
                         var hchart = Highcharts.chart(divname, {
@@ -210,7 +269,7 @@ Highcharts.setOptions({ global: { useUTC: false } });
                             },
                             yAxis: {
                                 title: {
-                                    text: name + '(%)'
+                                    text: field + '(%)'
                                 }
                             },
                             legend: {
@@ -241,7 +300,7 @@ Highcharts.setOptions({ global: { useUTC: false } });
                             },
                             series: [{
                                 type: 'area',
-                                name: '平均 ' + name + '(%)',
+                                name: '平均 ' + field + '(%)',
                                 data: data
                             }]
                         });
@@ -251,16 +310,25 @@ Highcharts.setOptions({ global: { useUTC: false } });
                 });
             }
 
-            async function update_system_cron_exp(divname, name) {
-                await update_system_cron(divname, name);
+            async function update_system_cron_exp(divname, network_id) {
+                await update_system_cron(divname, network_id);
             }
 
-            update_system_cron_exp('container3', 'cpu');
-            update_system_cron_exp('container4', 'mem');
-            update_system_cron_exp('container5', 'send_bandwidth');
-            update_system_cron_exp('container6', 'recv_bandwidth');
-            update_system_cron_exp('container7', 'send_packet');
-            update_system_cron_exp('container8', 'recv_packet');
+            function update_system_cron_all() {
+                network_result = get_all_network_num();
+                for (var i = 0; i < network_result.length; ++i) {
+                    var network_num  = network_result[i]['network_num'];
+                    var network_id   = network_result[i]['network_id'];
+                    var network_type = network_result[i]['network_type'];
+                    console.log(network_num);
+                    console.log(network_id);
+                    console.log(network_type);
+                    container_net7;
+                    var divname = 'container_net' + (i + 1);
+                    update_system_cron_exp(divname, network_id);
+                }
+            }
+
         </script>
     </body>
 

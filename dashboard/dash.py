@@ -443,6 +443,43 @@ def system_cron_info_query():
         ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
         return jsonify(ret)
 
+# GET /api/web/network_num/?network_id=685900340240&network_type=rec/zec/edg/arc/adv/val
+@app.route('/api/web/network_num/', methods = ['GET'])
+@app.route('/api/web/network_num', methods = ['GET'])
+@auth.login_required
+def network_num_query():
+    tnow = int(time.time() * 1000)
+    network_id       = request.args.get('network_id')        or None
+    network_type     = request.args.get('network_type')      or None
+    limit            = request.args.get('limit')             or 100 
+    page             = request.args.get('page')              or 1
+
+    status_ret = {
+            0:'OK',
+            -1:'没有数据',
+            -2: '参数不合法',
+            }
+    if network_type != None:
+        if network_type not in ['rec', 'zec', 'edg', 'arc', 'adv', 'val']:
+            ret = {'status': -2,'error': status_ret.get(-2) , 'results': []}
+            return jsonify(ret)
+
+    data = {
+            'network_id':       network_id,
+            'network_type':     network_type,
+    }
+
+    results= mydash.get_network_num(data, page= page, limit = limit)
+    if results:
+        ret = {'status':0,'error': status_ret.get(0) , 'results': results}
+        return jsonify(ret)
+    else:
+        ret = {'status': -1,'error': status_ret.get(-1) , 'results': results}
+        return jsonify(ret)
+
+
+
+
 
 
 

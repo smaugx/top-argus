@@ -426,18 +426,19 @@ class Dash(object):
         slog.debug('get system_alarm_info ok, size:{0}'.format(len(vs)))
         return results, total
 
-    def load_db_network_id_num(self):
+    def load_db_network_id_num(self, data, limit = 100, page = 1):
         vs,total = [],0
-        vs, total = self.network_id_num_sql_.query_from_db(data = {})
+        vs, total = self.network_id_num_sql_.query_from_db(data = data, limit = limit, page = page)
         if not vs:
             slog.warn('load network_id_num from db failed or empty')
-            return False
-        for item in vs:
-            self.network_id_num_[item.get('network_id')] = item
+        return vs
 
-        slog.info('load network_id_num from db success:{0}'.format(json.dumps(self.network_id_num_)))
-        return True
-
+    def get_network_num(self,data,limit = 100, page = 1):
+        if data.get('network_id'):
+            data['network_id'] = data.get('network_id')[:17]
+        results = self.load_db_network_id_num(data, limit = limit, page = page)
+        return results
+        
     # get system_cron_info of one or more public_ip_port
     def get_system_cron_info(self,data, page = 1, limit = 200000):
         '''
@@ -483,7 +484,10 @@ class Dash(object):
         if data.get('network_id'):
             network_id = data.get('network_id')[:17]
             if network_id not in self.network_id_num_:
-                self.load_db_network_id_num()
+                vs = self.load_db_network_id_num(data = {})
+                for item in vs:
+                    self.network_id_num_[item.get('network_id')] = item
+                slog.info('load network_id_num from db size:{0}'.format(len(vs)))
 
             if network_id not in self.network_id_num_:
                 slog.warn('can not find network_num of network_id:{0}'.format(network_id))
