@@ -221,6 +221,26 @@ Highcharts.setOptions({ global: { useUTC: false } });
                 if (!field) {
                     field = 'cpu';
                 }
+                var field_unit = '';
+                if (field == 'cpu') {
+                    field_unit = '%';
+                }
+                else if (field == 'mem') {
+                    field_unit = '%';
+                }
+                else if (field == 'send_bandwidth') {
+                    field_unit = 'Kb/s';
+                }
+                else if (field == 'recv_bandwidth') {
+                    field_unit = 'Kb/s';
+                }
+                else if (field == 'send_packet') {
+                    field_unit = 'qps';
+                }
+                else if (field == 'recv_packet') {
+                    field_unit = 'qps';
+                }
+
                 var big_title = title_prefix + field + ' 走势图';
                 var end = Date.now();
                 var begin = end - 60 * 60 * 1000;
@@ -308,7 +328,7 @@ Highcharts.setOptions({ global: { useUTC: false } });
                             },
                             series: [{
                                 type: 'area',
-                                name: '平均 ' + field + '(%)',
+                                name: '平均 ' + field + '(' + field_unit + ')',
                                 data: data
                             }]
                         });
