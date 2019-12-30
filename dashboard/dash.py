@@ -67,9 +67,18 @@ def verify_password(username, password):
 
     return check_password_hash(user_info.get(username), password)
 
+# using redis cache for url request to improve performance
+def using_redis_cache(func):
+    def using_redis(*args, **kwargs):
+        print(*args)
+        print(**kwargs)
+        return func(*args, **kwargs)
+    return using_redis
+
 
 @app.route('/')
 @auth.login_required
+@using_redis_cache
 def hello_world():
     return '{0} Hello, World!'.format(auth.username())
 
