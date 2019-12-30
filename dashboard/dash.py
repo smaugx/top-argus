@@ -36,6 +36,7 @@ user_info = {
     'smaug2': generate_password_hash('hello2')
     }
 
+WITH_RESPONSE_CACHE = True
 # key is route, value is response
 request_cache_map = {}
 
@@ -106,6 +107,9 @@ def get_route(url):
 # using redis cache for url request to improve performance
 def using_response_cache(func):
     def is_using_cache(*args, **kwargs):
+        if not WITH_RESPONSE_CACHE:
+            return func(*args, **kwargs)
+
         print('in using redis')
         print(request.url)
         url = request.url
@@ -155,6 +159,7 @@ def index():
 @app.route('/api/web/packet/', methods = ['GET'])
 @app.route('/api/web/packet', methods = ['GET'])
 @auth.login_required
+@using_response_cache
 def packet_query():
     uniq_chain_hash   = request.args.get('uniq_chain_hash')       or None
     chain_hash        = request.args.get('chain_hash')            or None
@@ -213,6 +218,7 @@ def packet_query():
 @app.route('/api/web/packet_recv/', methods = ['GET'])
 @app.route('/api/web/packet_recv', methods = ['GET'])
 @auth.login_required
+@using_response_cache
 def packet_recv_query():
     uniq_chain_hash   = request.args.get('uniq_chain_hash')       or None
     chain_hash        = request.args.get('chain_hash')            or None
@@ -253,6 +259,7 @@ def packet_recv_query():
 @app.route('/api/web/network/', methods = ['GET'])
 @app.route('/api/web/network', methods = ['GET'])
 @auth.login_required
+@using_response_cache
 def network_query():
     network_id = request.args.get('network_id')       or '010000'
     node_id    = request.args.get('node_id')          or None
@@ -308,6 +315,7 @@ def network_query():
 @app.route('/api/web/networkid/', methods = ['GET'])
 @app.route('/api/web/networkid', methods = ['GET'])
 @auth.login_required
+@using_response_cache
 def networkid_query():
     virtual = request.args.get('virtual')         or None
     if virtual == 'false':
@@ -333,6 +341,7 @@ def networkid_query():
 @app.route('/api/web/packet_drop/', methods = ['GET'])
 @app.route('/api/web/packet_drop', methods = ['GET'])
 @auth.login_required
+@using_response_cache
 def packet_drop_query():
     now = int(time.time() * 1000)
     latest_hour = now - 24 * 60 * 60 * 1000 # 24 hour
@@ -428,6 +437,7 @@ def node_info_query():
 @app.route('/api/web/system_alarm_info/', methods = ['GET'])
 @app.route('/api/web/system_alarm_info', methods = ['GET'])
 @auth.login_required
+@using_response_cache
 def system_alarm_info_query():
     tnow = int(time.time() * 1000)
     public_ip_port   = request.args.get('public_ip_port')    or None
@@ -473,6 +483,7 @@ def system_alarm_info_query():
 @app.route('/api/web/system_cron_info/', methods = ['GET'])
 @app.route('/api/web/system_cron_info', methods = ['GET'])
 @auth.login_required
+@using_response_cache
 def system_cron_info_query():
     tnow = int(time.time() * 1000)
     public_ip_port   = request.args.get('public_ip_port')    or None
@@ -520,6 +531,7 @@ def system_cron_info_query():
 @app.route('/api/web/network_num/', methods = ['GET'])
 @app.route('/api/web/network_num', methods = ['GET'])
 @auth.login_required
+@using_response_cache
 def network_num_query():
     tnow = int(time.time() * 1000)
     network_id       = request.args.get('network_id')        or None
