@@ -126,13 +126,15 @@ def using_response_cache_exp(expire_time):
                 sroute_response = argus_redis.hget(sroute, sroute)
                 if not sroute_response:
                     response = func(*args, **kwargs)
-                    argus_redis.hset(sroute, sroute, response)
+                    str_response = response.get_data(as_text=True)
+                    argus_redis.hset(sroute, sroute, str_response)
                     argus_redis.expire(sroute, expire_time)
                     print('set redis key:{0} expire:{1}'.format(sroute, expire_time))
                     return response
                 else:
                     print('not expired, using redis_cache response')
-                    return sroute_response
+                    final_response = json.loads(sroute_response)
+                    return jsonify(final_response)
             else:
                 print('in using cache of mem cache')
                 if sroute not in request_cache_map:
@@ -172,7 +174,7 @@ def hello_world():
 @using_response_cache_exp(120)
 def index():
     response = 'Hello, World!'
-    return response
+    return jsonify(response)
 
 # GET /api/web/packet/?uniq_chain_hash=73439849340238&chain_hash=8180269&chain_msgid=393217&is_root=0&broadcast=1&send_node_id=010000&src_node_id=660000&dest_node_id=680000
 @app.route('/api/web/packet/', methods = ['GET'])
