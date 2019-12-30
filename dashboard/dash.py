@@ -36,6 +36,9 @@ user_info = {
     'smaug2': generate_password_hash('hello2')
     }
 
+# key is route, value is response
+request_cache_map = {}
+
 mydash = dash_core.Dash()
 myuser = dash_user.User()
 
@@ -67,26 +70,86 @@ def verify_password(username, password):
 
     return check_password_hash(user_info.get(username), password)
 
+def get_route(url):
+    url = url.split('api')
+    if len(url) != 2:
+        return None
+    
+    sroute = '/api' + url[1]
+    sroute = sroute.split('?')
+    param_list = []
+    sroute_prefix = ''
+    for p in sroute:
+        if p.startswith('/api'):
+            sroute_prefix = p
+            continue
+        if not p:
+            continue
+        pp = p.split('&')
+        for param in pp:
+            if param.find('begin=') != -1:
+                continue
+            if param.find('end=') != -1:
+                continue
+            if param.find('_=') != -1:
+                continue
+            param_list.append(param)
+    print('param_list:{0}'.format(json.dumps(param_list)))
+    sroute = '&'.join(param_list)
+    sroute = sroute_prefix + '?' + sroute
+    print('finally sroute:{0}'.format(sroute))
+    return sroute
+      
+
+
+
 # using redis cache for url request to improve performance
-def using_redis_cache(func):
-    def using_redis(*args, **kwargs):
-        print(*args)
-        print(**kwargs)
-        return func(*args, **kwargs)
-    return using_redis
+def using_response_cache(func):
+    def is_using_cache(*args, **kwargs):
+        print('in using redis')
+        print(request.url)
+        url = request.url
+        sroute = get_route(url)
+        print('sroute:{0}'.format(sroute))
+        if not sroute:
+            return func(*args, **kwargs)
+
+        if sroute not in request_cache_map:
+            response = func(*args, **kwargs)
+            request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
+            return response
+
+        sresponse = request_cache_map.get(sroute)
+        if not sresponse:
+            response = func(*args, **kwargs)
+            request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
+            return response
+
+        if abs(sresponse.get('update_timestamp') - int(time.time()) * 1000) > 20 * 1000:
+            print('response expire, drop and requery') 
+            response = func(*args, **kwargs)
+            request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
+            return response
+
+        print('not expired, using cache response')
+        return sresponse.get('response')
+
+    is_using_cache.__name__ = func.__name__ 
+    return is_using_cache
 
 
 @app.route('/')
 @auth.login_required
-@using_redis_cache
 def hello_world():
     return '{0} Hello, World!'.format(auth.username())
 
-@app.route('/index', methods=['GET'])
-@app.route('/index/', methods=['GET'])
+@app.route('/api/index', methods=['GET'])
+@app.route('/api/index/', methods=['GET'])
 @auth.login_required
+@using_response_cache
 def index():
-    return 'Hello, World!'
+    response = 'Hello, World!'
+    return response
 
 # GET /api/web/packet/?uniq_chain_hash=73439849340238&chain_hash=8180269&chain_msgid=393217&is_root=0&broadcast=1&send_node_id=010000&src_node_id=660000&dest_node_id=680000
 @app.route('/api/web/packet/', methods = ['GET'])
@@ -321,6 +384,7 @@ def packet_drop_query():
 @app.route('/api/web/node_info/', methods = ['GET'])
 @app.route('/api/web/node_info', methods = ['GET'])
 @auth.login_required
+@using_response_cache
 def node_info_query():
     simple           = request.args.get('simple')            or 'false'
     public_ip_port   = request.args.get('public_ip_port')    or None
