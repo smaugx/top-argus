@@ -100,47 +100,48 @@ def get_route(url):
     sroute = sroute_prefix + '?' + sroute
     print('finally sroute:{0}'.format(sroute))
     return sroute
-      
 
-
-
-# using redis cache for url request to improve performance
-def using_response_cache(func):
-    def is_using_cache(*args, **kwargs):
-        if not WITH_RESPONSE_CACHE:
-            return func(*args, **kwargs)
-
-        print('in using redis')
-        print(request.url)
-        url = request.url
-        sroute = get_route(url)
-        print('sroute:{0}'.format(sroute))
-        if not sroute:
-            return func(*args, **kwargs)
-
-        if sroute not in request_cache_map:
-            response = func(*args, **kwargs)
-            request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
-            return response
-
-        sresponse = request_cache_map.get(sroute)
-        if not sresponse:
-            response = func(*args, **kwargs)
-            request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
-            return response
-
-        if abs(sresponse.get('update_timestamp') - int(time.time()) * 1000) > 20 * 1000:
-            print('response expire, drop and requery') 
-            response = func(*args, **kwargs)
-            request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
-            return response
-
-        print('not expired, using cache response')
-        return sresponse.get('response')
-
-    is_using_cache.__name__ = func.__name__ 
-    return is_using_cache
-
+ # using redis cache for url request to improve performance
+def using_response_cache_exp(expire_time):
+    def using_response_cache(func):
+        def is_using_cache(*args, **kwargs):
+            if not WITH_RESPONSE_CACHE:
+                return func(*args, **kwargs)
+    
+            print('in using redis')
+            print(expire_time)
+            print(request.url)
+            url = request.url
+            sroute = get_route(url)
+            print('sroute:{0}'.format(sroute))
+            if not sroute:
+                return func(*args, **kwargs)
+    
+            if sroute not in request_cache_map:
+                response = func(*args, **kwargs)
+                request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
+                return response
+    
+            sresponse = request_cache_map.get(sroute)
+            if not sresponse:
+                response = func(*args, **kwargs)
+                request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
+                return response
+    
+            if abs(sresponse.get('update_timestamp') - int(time.time()) * 1000) > expire_time * 1000:
+                print('response expire, drop and requery') 
+                response = func(*args, **kwargs)
+                request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
+                return response
+    
+            print('not expired, using cache response')
+            return sresponse.get('response')
+    
+        is_using_cache.__name__ = func.__name__ 
+        return is_using_cache
+    return using_response_cache
+    
+     
 
 @app.route('/')
 @auth.login_required
@@ -150,7 +151,7 @@ def hello_world():
 @app.route('/api/index', methods=['GET'])
 @app.route('/api/index/', methods=['GET'])
 @auth.login_required
-@using_response_cache
+@using_response_cache_exp(120)
 def index():
     response = 'Hello, World!'
     return response
@@ -159,7 +160,7 @@ def index():
 @app.route('/api/web/packet/', methods = ['GET'])
 @app.route('/api/web/packet', methods = ['GET'])
 @auth.login_required
-@using_response_cache
+@using_response_cache_exp(60)
 def packet_query():
     uniq_chain_hash   = request.args.get('uniq_chain_hash')       or None
     chain_hash        = request.args.get('chain_hash')            or None
@@ -218,7 +219,7 @@ def packet_query():
 @app.route('/api/web/packet_recv/', methods = ['GET'])
 @app.route('/api/web/packet_recv', methods = ['GET'])
 @auth.login_required
-@using_response_cache
+@using_response_cache_exp(60)
 def packet_recv_query():
     uniq_chain_hash   = request.args.get('uniq_chain_hash')       or None
     chain_hash        = request.args.get('chain_hash')            or None
@@ -259,7 +260,7 @@ def packet_recv_query():
 @app.route('/api/web/network/', methods = ['GET'])
 @app.route('/api/web/network', methods = ['GET'])
 @auth.login_required
-@using_response_cache
+@using_response_cache_exp(60)
 def network_query():
     network_id = request.args.get('network_id')       or '010000'
     node_id    = request.args.get('node_id')          or None
@@ -315,7 +316,7 @@ def network_query():
 @app.route('/api/web/networkid/', methods = ['GET'])
 @app.route('/api/web/networkid', methods = ['GET'])
 @auth.login_required
-@using_response_cache
+@using_response_cache_exp(80)
 def networkid_query():
     virtual = request.args.get('virtual')         or None
     if virtual == 'false':
@@ -341,7 +342,7 @@ def networkid_query():
 @app.route('/api/web/packet_drop/', methods = ['GET'])
 @app.route('/api/web/packet_drop', methods = ['GET'])
 @auth.login_required
-@using_response_cache
+@using_response_cache_exp(60)
 def packet_drop_query():
     now = int(time.time() * 1000)
     latest_hour = now - 24 * 60 * 60 * 1000 # 24 hour
@@ -393,7 +394,7 @@ def packet_drop_query():
 @app.route('/api/web/node_info/', methods = ['GET'])
 @app.route('/api/web/node_info', methods = ['GET'])
 @auth.login_required
-@using_response_cache
+@using_response_cache_exp(60)
 def node_info_query():
     simple           = request.args.get('simple')            or 'false'
     public_ip_port   = request.args.get('public_ip_port')    or None
@@ -437,7 +438,7 @@ def node_info_query():
 @app.route('/api/web/system_alarm_info/', methods = ['GET'])
 @app.route('/api/web/system_alarm_info', methods = ['GET'])
 @auth.login_required
-@using_response_cache
+@using_response_cache_exp(30)
 def system_alarm_info_query():
     tnow = int(time.time() * 1000)
     public_ip_port   = request.args.get('public_ip_port')    or None
@@ -483,7 +484,7 @@ def system_alarm_info_query():
 @app.route('/api/web/system_cron_info/', methods = ['GET'])
 @app.route('/api/web/system_cron_info', methods = ['GET'])
 @auth.login_required
-@using_response_cache
+@using_response_cache_exp(60)
 def system_cron_info_query():
     tnow = int(time.time() * 1000)
     public_ip_port   = request.args.get('public_ip_port')    or None
@@ -531,7 +532,7 @@ def system_cron_info_query():
 @app.route('/api/web/network_num/', methods = ['GET'])
 @app.route('/api/web/network_num', methods = ['GET'])
 @auth.login_required
-@using_response_cache
+@using_response_cache_exp(60)
 def network_num_query():
     tnow = int(time.time() * 1000)
     network_id       = request.args.get('network_id')        or None
