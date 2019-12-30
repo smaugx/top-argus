@@ -82,6 +82,8 @@ class NetworkSizeAlarmConsumer(object):
                     alarm_type = alarm_payload.get('alarm_type')
                     if alarm_type == 'networksize':
                         self.networksize_alarm(alarm_payload.get('alarm_content'))
+                    elif alarm_type == 'system':
+                        self.system_cron_alarm(alarm_payload.get('alarm_content'))
                     else:
                         slog.warn('invalid alarm_type:{0}'.format(alarm_type))
             except Exception as e:
