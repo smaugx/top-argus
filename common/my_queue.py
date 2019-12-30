@@ -144,3 +144,22 @@ class RedisQueue(object):
                 item_list.append(item)
         slog.debug('get_queue multi-item size:{0}'.format(len(item_list)))
         return item_list
+
+
+class TopArgusRedis(object):
+    def __init__(self, host, port, password):
+        self.host_      = host
+        self.port_      = port
+        self.password_  = password
+        self.myredis_     = None
+        return
+
+    def connect(self):
+        try:
+            mypool  = redis.ConnectionPool(host = self.host_, port = self.port_, password = self.password_, decode_responses=True)
+            self.myredis_ = redis.StrictRedis(connection_pool = mypool)
+        except Exception as e:
+            slog.warn('connect redis host:{0} port:{1} failed'.format(self.host_, self.port_))
+            self.myredis_ = None
+        finally:
+            return self.myredis_

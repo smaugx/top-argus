@@ -27,6 +27,8 @@ import threading
 import dash_core
 import dash_user
 from common.slogging import slog
+from common.my_queue import TopArgusRedis
+import common.config as sconfig
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
@@ -39,6 +41,9 @@ user_info = {
 WITH_RESPONSE_CACHE = True
 # key is route, value is response
 request_cache_map = {}
+
+argus_redis = TopArgusRedis(host= sconfig.REDIS_HOST, port=sconfig.REDIS_PORT, password=sconfig.REDIS_PASS)
+argus_redis.connect()   # connect failed will by None
 
 mydash = dash_core.Dash()
 myuser = dash_user.User()
@@ -108,7 +113,6 @@ def using_response_cache_exp(expire_time):
             if not WITH_RESPONSE_CACHE:
                 return func(*args, **kwargs)
     
-            print('in using redis')
             print(expire_time)
             print(request.url)
             url = request.url
@@ -116,26 +120,40 @@ def using_response_cache_exp(expire_time):
             print('sroute:{0}'.format(sroute))
             if not sroute:
                 return func(*args, **kwargs)
+
+            if argus_redis:
+                print('in using cache of redis cache')
+                sroute_response = argus_redis.hget(sroute, sroute)
+                if not sroute_response:
+                    response = func(*args, **kwargs)
+                    argus_redis.hset(sroute, sroute, response)
+                    argus_redis.expire(sroute, expire_time)
+                    print('set redis key:{0} expire:{1}'.format(sroute, expire_time))
+                    return response
+                else:
+                    print('not expired, using redis_cache response')
+                    return sroute_response
+            else:
+                print('in using cache of mem cache')
+                if sroute not in request_cache_map:
+                    response = func(*args, **kwargs)
+                    request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
+                    return response
     
-            if sroute not in request_cache_map:
-                response = func(*args, **kwargs)
-                request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
-                return response
+                sresponse = request_cache_map.get(sroute)
+                if not sresponse:
+                    response = func(*args, **kwargs)
+                    request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
+                    return response
     
-            sresponse = request_cache_map.get(sroute)
-            if not sresponse:
-                response = func(*args, **kwargs)
-                request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
-                return response
+                if abs(sresponse.get('update_timestamp') - int(time.time()) * 1000) > expire_time * 1000:
+                    print('response expire, drop and requery') 
+                    response = func(*args, **kwargs)
+                    request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
+                    return response
     
-            if abs(sresponse.get('update_timestamp') - int(time.time()) * 1000) > expire_time * 1000:
-                print('response expire, drop and requery') 
-                response = func(*args, **kwargs)
-                request_cache_map[sroute] = {'update_timestamp': int(time.time()) * 1000, 'response': response}
-                return response
-    
-            print('not expired, using cache response')
-            return sresponse.get('response')
+                print('not expired, using cache response')
+                return sresponse.get('response')
     
         is_using_cache.__name__ = func.__name__ 
         return is_using_cache
