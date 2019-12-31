@@ -20,7 +20,7 @@ class PacketAlarmConsumer(object):
     def __init__(self, q, queue_key_list, alarm_env = 'test'):
         slog.info("packet alarmconsumer init. pid:{0} paraent:{1} queue_key:{2}".format(os.getpid(), os.getppid(), json.dumps(queue_key_list)))
         self.expire_time_  = 20  # 10min, only focus on latest 10 min
-        self.consume_step_ = 2000 # get_queue return size for one time
+        self.consume_step_ = 20# get_queue return size for one time
         self.alarm_env_ = alarm_env
 
         self.packet_recv_info_flag_ = False  # False: will not track or store recv ndoes/ip of packet; True is reverse
@@ -314,7 +314,7 @@ class PacketAlarmConsumer(object):
                 self.network_ids_ = json.loads(fin.read())
                 slog.info('update network_id from shm:{0}'.format(self.network_info_shm_filename_))
                 fin.close()
-            for k,v in self.network_ids_:
+            for k,v in self.network_ids_.items():
                 slog.debug('after update network_id:{0} size:{1}'.format(k, v.get('size')))
             self.network_ids_['update'] = int(time.time() * 1000)
             return True
@@ -342,7 +342,7 @@ class PacketAlarmConsumer(object):
     def dump_db_packetinfo(self):
         # packet_info (drop,hop,time...)
         slog.info("dump packet_info to db")
-        if len(self.packet_info_uniq_chain_hash_) < 100:
+        if len(self.packet_info_uniq_chain_hash_) < 10:
             slog.info('packet cache size:{0} less then 100, will not dump to db'.format(len(self.packet_info_uniq_chain_hash_)))
             return
         now = int(time.time() * 1000)
