@@ -39,7 +39,7 @@ class PacketInfoSql(Bean):
             where.append(' send_node_id = {0} '.format(data.get('send_node_id')))
 
         if data.get('src_node_id'):
-            if len(data.get('src_node_id')) <= 10:
+            if len(data.get('src_node_id')) <= 12:
                 where.append(' src_node_id regexp "{0}" '.format(data.get('src_node_id')))
             else:
                 where.append(' src_node_id = "{0}" '.format(data.get('src_node_id')))
@@ -108,13 +108,13 @@ class PacketRecvInfoSql(Bean):
             where.append(' uniq_chain_hash = {0} '.format(data.get('uniq_chain_hash')))
 
         if data.get('recv_node_id'):
-            if len(data.get('recv_node_id')) <= 10:
+            if len(data.get('recv_node_id')) <= 12:
                 where.append(' recv_node_id regexp "{0}" '.format(data.get('recv_node_id')))
             else:
                 where.append(' recv_node_id = "{0}" '.format(data.get('recv_node_id')))
 
         if data.get('recv_node_ip'):
-            if len(data.get('recv_node_ip')) <= 10:
+            if len(data.get('recv_node_ip')) <= 12:
                 where.append(' recv_node_ip regexp "{0}" '.format(data.get('recv_node_ip')))
             else:
                 where.append(' recv_node_ip = "{0}" '.format(data.get('recv_node_ip')))
