@@ -92,16 +92,16 @@ class NetworkSizeAlarmConsumer(object):
 
 
     def get_networksize(self, network_id):
-        if network_id.startswith('010000'):
-            network_id = '010000'
+        if network_id.startswith('ffffff'):
+            network_id = 'ffffff'
         if network_id not in self.network_ids_:
             return 0
         return self.network_ids_[network_id]['size']
 
     def get_node_ip(self, node_id):
-        network_id = node_id[:17]  # head 8 * 2 bytes
-        if network_id.startswith('010000'):
-            network_id = '010000'
+        network_id = node_id[:13]  # head 3 + 1 + 1 + 1 = 6 bytes, that is 6 * 2 = 12 char of prefix.
+        if network_id.startswith('ffffff'):
+            network_id = 'ffffff'
         if network_id not in self.network_ids_:
             return ''
         for ni in self.network_ids_[network_id]['node_info']:
@@ -141,13 +141,15 @@ class NetworkSizeAlarmConsumer(object):
     def networksize_alarm_ent(self, content):
         if not content:
             return False
+        # common/node_role.json: 'network_focus_on': ['000000010000','000000020000', '0000000f0101', '0000000e0101', '0000000001'], # src or dest: rec;zec;edg;arc;aud/val
         node_id = content.get('node_id')
         node_ip = content.get('node_ip')  # ip:port
-        network_id = node_id[:17]  # head 8 * 2 bytes
+        network_id = node_id[:13]  # head 3 + 1 + 1 + 1 = 6 bytes, that is 6 * 2 = 12 char of prefix.
+
 
         # attention: specially for kroot_id 010000
-        if network_id.startswith('010000'):
-            network_id = '010000'
+        if network_id.startswith('ffffff'):
+            network_id = 'ffffff'
         node_id_status = content.get('node_id_status')
         if node_id_status == 'dead':
             # xtopchain maybe down
@@ -212,7 +214,7 @@ class NetworkSizeAlarmConsumer(object):
         return True
 
     def dump_db_network_id_num(self, network_id):
-        if network_id.startswith('010000'):
+        if network_id.startswith('ffffff'):
             return
         if network_id not in self.network_id_num_:
             self.load_db_network_id_num()
@@ -222,18 +224,25 @@ class NetworkSizeAlarmConsumer(object):
             return
 
         net_type = ''
-        if network_id.startswith('6400'):
+        if network_id.startswith('000000010000'):
             net_type = 'rec'
-        elif network_id.startswith('6500'):
+        elif network_id.startswith('000000020000'):
             net_type = 'zec'
-        elif network_id.startswith('6600'):
+        elif network_id.startswith('0000000f0101'):
             net_type = 'edg'
-        elif network_id.startswith('6700'):
+        elif network_id.startswith('0000000e0101'):
             net_type = 'arc'
-        elif network_id.startswith('6800'):
-            net_type = 'adv'
-        elif network_id.startswith('6900'):
-            net_type = 'val'
+        elif network_id.startswith('0000000001'):
+            tmp_group_id = int(network_id[-2:], 16)
+            if 0 <= tmp_group_id and tmp_group_id <= 63:
+                # adv group_id: [0, 64)
+                net_type = 'adv'
+            elif 64 <= tmp_group_id and tmp_group_id <= 126:
+                # val group_id: [64, 127)
+                net_type = 'val'
+            else:
+                slog.warn('not support network_id:{0} for map-num'.format(network_id))
+                return
         else:
             slog.warn('not support network_id:{0} for map-num'.format(network_id))
             return
@@ -289,28 +298,34 @@ class NetworkSizeAlarmConsumer(object):
 
         # key is public_ip_port, value is {'public_ip_port':'127.0.0.1:9000','rec':[],'zec':[],....,'val':[]} 
         # self.node_info_  = {}
+
+        # common/node_role.json: 'network_focus_on': ['000000010000','000000020000', '0000000f0101', '0000000e0101', '0000000001'], # src or dest: rec;zec;edg;arc;aud/val
         '''
 
         if not content:
             return  False
         node_id = content.get('node_id')
         node_ip = content.get('node_ip')  # ip:port
-        network_id = node_id[:17]  # head 8 * 2 bytes
-        if network_id.startswith('010000'):
-            network_id = '010000'
+        network_id = node_id[:13]  # head 3 + 1 + 1 + 1 = 6 bytes, that is 6 * 2 = 12 char of prefix.
+        if network_id.startswith('ffffff'):
+            network_id = 'ffffff'
         net_type = 'root'
-        if network_id.startswith('6400'):
+        if network_id.startswith('000000010000'):
             net_type = 'rec'
-        elif network_id.startswith('6500'):
+        elif network_id.startswith('000000020000'):
             net_type = 'zec'
-        elif network_id.startswith('6600'):
+        elif network_id.startswith('0000000f0101'):
             net_type = 'edg'
-        elif network_id.startswith('6700'):
+        elif network_id.startswith('0000000e0101'):
             net_type = 'arc'
-        elif network_id.startswith('6800'):
-            net_type = 'adv'
-        elif network_id.startswith('6900'):
-            net_type = 'val'
+        elif network_id.startswith('0000000001'):
+            tmp_group_id = int(network_id[-2:], 16)
+            if 0 <= tmp_group_id and tmp_group_id <= 63:
+                # adv group_id: [0, 64)
+                net_type = 'adv'
+            elif 64 <= tmp_group_id and tmp_group_id <= 126:
+                # val group_id: [64, 127)
+                net_type = 'val'
 
         node_id_status = content.get('node_id_status')
         if node_id_status == 'dead':
@@ -350,6 +365,7 @@ class NetworkSizeAlarmConsumer(object):
             slog.info('add node_id:{0} {1} to node_info'.format(node_id, node_ip))
             return True 
         
+        # TODO(smaug) why? TODOTODO
         if self.node_info_.get('public_ip_port') != node_ip:
             if not node_ip.startswith('127.0.0'):
                 self.node_info_['public_ip_port'] = node_ip
@@ -395,7 +411,7 @@ class NetworkSizeAlarmConsumer(object):
         if node_id_status == 'remove':
             alarm_info = 'remove node_id:{0}'.format(node_id)
         elif node_id_status == 'dead':
-            root_id = node_id  # 010000
+            root_id = node_id  # ffffff 
             alarm_info = 'xtopchain down'
             priority = PRIORITY_DICT.get('high')
         else:
@@ -430,7 +446,7 @@ class NetworkSizeAlarmConsumer(object):
             if not net_id_list:
                 continue
             for node_id in net_id_list:
-                network_id = node_id[:17]  # head 8 * 2 bytes
+                network_id = node_id[:13]
                 if not self.network_id_num_.get(network_id):
                     continue
                 network_num = self.network_id_num_.get(network_id).get('network_num')

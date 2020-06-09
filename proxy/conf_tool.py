@@ -27,14 +27,14 @@ gconfig = {
             'start': 'true',
             'sample_rate': 100,  #20%
             'alarm_type': 'packet',
-            'network_focus_on': ['640000',  '650000', '660000', '670000', '680000', '690000'], # src or dest
+            'network_focus_on': ['000000010000','000000020000', '0000000f0101', '0000000e0101', '0000000001'], # src or dest: rec;zec;edg;arc;aud/val
             'network_ignore':   [],  # src or dest
             },
         'grep_point2point': {
             'start': 'true',
             'sample_rate': 10,   #1% 
             'alarm_type': 'packet',
-            'network_focus_on': ['640000',  '650000', '660000', '670000', '680000', '690000'], # src or dest
+            'network_focus_on': ['000000010000','000000020000', '0000000f0101', '0000000e0101', '0000000001'], # src or dest: rec;zec;edg;arc;aud/val
             'network_ignore':   [],  # src or dest
             },
         'grep_networksize': {

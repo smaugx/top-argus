@@ -12,9 +12,9 @@ from database.packet_sql import PacketInfoSql, PacketRecvInfoSql,NetworkInfoSql
 from common.slogging import slog
 
 
-#{"local_node_id": "010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3", "uniq_chain_hash": "416514318958495", "chain_hash": "434300", "chain_msgid": "655361", "chain_msg_size": "9184", "send_timestamp": "1573547749649", "src_node_id": "690000010140ff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716", "dest_node_id": "690000010140ff7fffffffffffffffff000000009aee88245d7e31e7abaab1ac9956d5a0", "is_root": "0", "broadcast": "0"}
+#{"local_node_id": "ffffff5a10569d206a82b9f9555c2f53000000008f4a9aade07c40091694973c5b327842", "uniq_chain_hash": "416514318958495", "chain_hash": "434300", "chain_msgid": "655361", "chain_msg_size": "9184", "send_timestamp": "1573547749649", "src_node_id": "", "dest_node_id": "000000010000ffffffffffffffffffff00000000edb57e31dc005ec08774db4439a479ef", "is_root": "0", "broadcast": "0"}
 
-#{"local_node_id": "010000fc609372cc194a437ae775bdbf00000000d60a7c10e9cc5f94e24cb9c63ee1fba3", "uniq_chain_hash": "1146587997", "chain_hash":"79385948","chain_msgid": "917505", "packet_size": "602", "chain_msg_size": "189", "hop_num": "1", "recv_timestamp": "1573547749394", "src_node_id": "010000ffffffffffffffffffffffffff0000000088ae064b2bb22948a2aee8ecd81c08f9", "dest_node_id": "67000000ff7fff7fffffffffffffffff0000000032eae48d5405ad0a57173799f7490716", "is_root": "0", "broadcast": "0"}
+#{"local_node_id": "ffffff5a10569d206a82b9f9555c2f53000000008f4a9aade07c40091694973c5b327842", "uniq_chain_hash": "1146587997", "chain_hash":"79385948","chain_msgid": "917505", "packet_size": "602", "chain_msg_size": "189", "hop_num": "1", "recv_timestamp": "1573547749394", "src_node_id": "ffffff5a10569d206a82b9f9555c2f53000000008f4a9aade07c40091694973c5b327842", "dest_node_id": "000000010000ffffffffffffffffffff00000000da764df75d3f6b16514039e3a0833371", "is_root": "0", "broadcast": "0"}
 
 class PacketAlarmConsumer(object):
     def __init__(self, q, queue_key_list, alarm_env = 'test'):
@@ -219,7 +219,7 @@ class PacketAlarmConsumer(object):
 
             networksize = 1
             if cache_packet_info.get('broadcast') == 1:
-                networksize = self.get_networksize_from_remote(cache_packet_info['dest_node_id'][:17])  # head 8 * 2 bytes
+                networksize = self.get_networksize_from_remote(cache_packet_info['dest_node_id'][:13])
             cache_packet_info['dest_networksize'] = networksize
 
 
@@ -323,8 +323,8 @@ class PacketAlarmConsumer(object):
             return False
 
     def get_networksize_from_remote(self, network_id):
-        if network_id.startswith('010000'):
-            network_id = '010000'
+        if network_id.startswith('ffffff'):
+            network_id = 'ffffff'
         now = int(time.time() * 1000)
         update = self.network_ids_.get('update') or 0
         slog.debug('diff:{0} secs'.format( (now - update) / 1000))
