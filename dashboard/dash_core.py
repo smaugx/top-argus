@@ -247,10 +247,10 @@ class Dash(object):
                 if not v or not v.get('node_info'):
                     continue
                 if virtual == True:
-                    if k == '010000':
+                    if k == 'ffffff':
                         continue
                 else:
-                    if k != '010000':
+                    if k != 'ffffff':
                         continue
                 ninfo = {
                         'network_id': k,
@@ -435,7 +435,7 @@ class Dash(object):
 
     def get_network_num(self,data,limit = 100, page = 1):
         if data.get('network_id'):
-            data['network_id'] = data.get('network_id')[:17]
+            data['network_id'] = data.get('network_id')[:13]
         results = self.load_db_network_id_num(data, limit = limit, page = page)
         return results
         
@@ -482,7 +482,7 @@ class Dash(object):
 
         network_num = None
         if data.get('network_id'):
-            network_id = data.get('network_id')[:17]
+            network_id = data.get('network_id')[:13]
             if network_id not in self.network_id_num_:
                 vs = self.load_db_network_id_num(data = {})
                 for item in vs:
