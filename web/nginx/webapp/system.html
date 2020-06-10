@@ -244,7 +244,7 @@ Highcharts.setOptions({ global: { useUTC: false } });
 
                 var big_title = title_prefix + field + ' 走势图';
                 var end = Date.now();
-                var begin = end - 60 * 60 * 1000;
+                var begin = end - 12 *60 * 60 * 1000;
                 $.ajax({
                     cache: false,
                     type: "GET",

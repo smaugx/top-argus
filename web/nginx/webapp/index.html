@@ -23,23 +23,23 @@
                                 </span>
                                 <span>
                     <p class="navi_title"><a href="/packet.html">收包情况</a></p>
-                                        <p><a href="/packet.html?dest_node_id=010000">ROOT网络</a></p>
-                                        <p><a href="/packet.html?dest_node_id=680000">高级网络</a></p>
-                                        <p><a href="/packet.html?dest_node_id=690000">共识网络</a></p>
-                                        <p><a href="/packet.html?dest_node_id=640000">Rec 网络</a></p>
-                                        <p><a href="/packet.html?dest_node_id=650000">Zec 网络</a></p>
-                                        <p><a href="/packet.html?dest_node_id=660000">Edge 网络</a></p>
-                                        <p><a href="/packet.html?dest_node_id=670000">Archive 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=ffffff">ROOT网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=000000000101">高级网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=000000000140">共识网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=000000010000">Rec 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=000000020000">Zec 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=0000000f0101">Edge 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=0000000e0101">Archive 网络</a></p>
                                 </span>
 
                                 <span>
                                         <p class="navi_title"><a href="/network.html">P2P网络</a></p>
-                                        <p><a href="/network.html?network_id=680000">高级网络</a></p>
-                                        <p><a href="/network.html?network_id=690000">共识网络</a></p>
-                                        <p><a href="/network.html?network_id=640000">Rec 网络</a></p>
-                                        <p><a href="/network.html?network_id=640000">Zec 网络</a></p>
-                                        <p><a href="/network.html?network_id=660000">Edge 网络</a></p>
-                                        <p><a href="/network.html?network_id=670000">Archive 网络</a></p>
+                                        <p><a href="/network.html?network_id=000000000101">高级网络</a></p>
+                                        <p><a href="/network.html?network_id=000000000140">共识网络</a></p>
+                                        <p><a href="/network.html?network_id=000000010000">Rec 网络</a></p>
+                                        <p><a href="/network.html?network_id=000000020000">Zec 网络</a></p>
+                                        <p><a href="/network.html?network_id=0000000f0101">Edge 网络</a></p>
+                                        <p><a href="/network.html?network_id=0000000e0101">Archive 网络</a></p>
                                 </span>
                                 <span>
                                         <p class="navi_title"><a href="/alarm.html?priority=2">告警事件</a></p>
@@ -174,27 +174,27 @@ Highcharts.setOptions({ global: { useUTC: false } });
                         for (var i = 0; i < network_info.length; ++i) {
                             var value = network_info[i]['network_size'];
                             var name = network_info[i]['network_id'];
-                            if (name.startsWith('640000')) {
+                            if (name.startsWith('000000010000')) {
                                 //name = 'Rec(' + name + ")";
                                 name = 'Rec' + name_filter['Rec'];
                                 name_filter['Rec'] += 1;
-                            } else if (name.startsWith('650000')) {
+                            } else if (name.startsWith('000000020000')) {
                                 //name = 'Zec(' + name + ")";
                                 name = 'Zec' + name_filter['Zec'];
                                 name_filter['Zec'] += 1;
-                            } else if (name.startsWith('660000')) {
+                            } else if (name.startsWith('0000000f0101')) {
                                 //name = 'Edge(' + name + ")";
                                 name = 'Edg' + name_filter['Edg'];
                                 name_filter['Edg'] += 1;
-                            } else if (name.startsWith('670000')) {
+                            } else if (name.startsWith('0000000e0101')) {
                                 //name = 'Archive(' + name + ")";
                                 name = 'Arc' + name_filter['Arc'];
                                 name_filter['Arc'] += 1;
-                            } else if (name.startsWith('680000')) {
+                            } else if (name.startsWith('000000000101')) {
                                 //name = 'Auditor(' + name + ")";
                                 name = 'Aud' + name_filter['Aud'];
                                 name_filter['Aud'] += 1;
-                            } else if (name.startsWith('690000')) {
+                            } else if (name.startsWith('000000000140')) {
                                 //name = 'Validator(' + name + ")";
                                 name = 'Val' + name_filter['Val'];
                                 name_filter['Val'] += 1;
@@ -230,7 +230,7 @@ function sleep(d){
                 $.ajax({
                     cache: false,
                     type: "GET",
-                    url: "/api/web/network?network_id=010000&withip=true",
+                    url: "/api/web/network?network_id=ffffff&withip=true",
                     data: null,
                     dataType: "json",
                     async: false,

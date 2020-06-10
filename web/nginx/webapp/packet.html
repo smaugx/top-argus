@@ -25,22 +25,22 @@
                                 </span>
                                 <span>
                                         <p class="navi_title"><a href="/packet.html">收包情况</a></p>
-                                        <p><a href="/packet.html?dest_node_id=010000">ROOT网络</a></p>
-                                        <p><a href="/packet.html?dest_node_id=680000">高级网络</a></p>
-                                        <p><a href="/packet.html?dest_node_id=690000">共识网络</a></p>
-                                        <p><a href="/packet.html?dest_node_id=640000">Rec 网络</a></p>
-                                        <p><a href="/packet.html?dest_node_id=650000">Zec 网络</a></p>
-                                        <p><a href="/packet.html?dest_node_id=660000">Edge 网络</a></p>
-                                        <p><a href="/packet.html?dest_node_id=670000">Archive 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=ffffff">ROOT网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=000000000101">高级网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=000000000140">共识网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=000000010000">Rec 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=000000020000">Zec 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=0000000f0101">Edge 网络</a></p>
+                                        <p><a href="/packet.html?dest_node_id=0000000e0101">Archive 网络</a></p>
                                 </span>
                                 <span>
                                         <p class="navi_title"><a href="/network.html">P2P网络</a></p>
-                                        <p><a href="/network.html?network_id=680000">高级网络</a></p>
-                                        <p><a href="/network.html?network_id=690000">共识网络</a></p>
-                                        <p><a href="/network.html?network_id=640000">Rec 网络</a></p>
-                                        <p><a href="/network.html?network_id=640000">Zec 网络</a></p>
-                                        <p><a href="/network.html?network_id=660000">Edge 网络</a></p>
-                                        <p><a href="/network.html?network_id=670000">Archive 网络</a></p>
+                                        <p><a href="/network.html?network_id=000000000101">高级网络</a></p>
+                                        <p><a href="/network.html?network_id=000000000140">共识网络</a></p>
+                                        <p><a href="/network.html?network_id=000000010000">Rec 网络</a></p>
+                                        <p><a href="/network.html?network_id=000000020000">Zec 网络</a></p>
+                                        <p><a href="/network.html?network_id=0000000f0101">Edge 网络</a></p>
+                                        <p><a href="/network.html?network_id=0000000e0101">Archive 网络</a></p>
                                 </span>
                                 <span>
                                         <p class="navi_title"><a href="/alarm.html?priority=2">告警事件</a></p>
@@ -165,15 +165,15 @@ function getQueryString(name) {
                                 for (var i =0; i < result['results'].length; ++i) {
                                     var item = result['results'][i];
                                     var new_item = {};
-                                    new_item['src_node_id'] = '<a href="/packet.html?dest_node_id='+item['src_node_id']+'">'+ item['src_node_id'].substring(0,7)+"..."+item['src_node_id'].substring(66,72) + '</a>';
-                                    new_item['dest_node_id'] = '<a href="/packet.html?dest_node_id='+item['dest_node_id']+'">'+ item['dest_node_id'].substring(0,7)+"..."+item['dest_node_id'].substring(66,72) + '</a>';
+                                    new_item['src_node_id'] = '<a href="/packet.html?dest_node_id='+item['src_node_id']+'">'+ item['src_node_id'].substring(5,12)+"..."+item['src_node_id'].substring(66,72) + '</a>';
+                                    new_item['dest_node_id'] = '<a href="/packet.html?dest_node_id='+item['dest_node_id']+'">'+ item['dest_node_id'].substring(5,12)+"..."+item['dest_node_id'].substring(66,72) + '</a>';
                                     new_item['chain_hash'] = '<a href="/api/web/packet?uniq_chain_hash='+item['uniq_chain_hash']+'">'+ item['chain_hash'] + '</a>';
                                     new_item['chain_type'] = item['chain_msgid'].toString(16);
                                     new_item['msg_size'] = item['chain_msg_size'];
                                     new_item['packet_size'] = item['packet_size'];
                                     new_item['recv_nodes'] = item['recv_nodes_num'];
                                     //new_item['dest_network'] = item['dest_networksize'];
-                                    new_item['dest_network'] = '<a href="/network.html?network_id='+item['dest_node_id'].substring(0,17) +'">'+ item['dest_networksize'] + '</a>';
+                                    new_item['dest_network'] = '<a href="/network.html?network_id='+item['dest_node_id'].substring(0,12) +'">'+ item['dest_networksize'] + '</a>';
                                     new_item['drop_rate'] = item['drop_rate'];
                                     if (item['drop_rate'] > 10.0) {
                                         new_item['drop_rate'] = '<span style="color:red;font-weight:bold">' + item['drop_rate'] + '</span>';
