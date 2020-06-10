@@ -282,7 +282,7 @@ def packet_recv_query():
 @auth.login_required
 @using_response_cache_exp(60)
 def network_query():
-    network_id = request.args.get('network_id')       or '010000'
+    network_id = request.args.get('network_id')       or 'ffffff'
     node_id    = request.args.get('node_id')          or None
     node_ip    = request.args.get('node_ip')          or None
     onlysize   = request.args.get('onlysize')         or None

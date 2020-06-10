@@ -40,13 +40,13 @@ class PacketInfoSql(Bean):
 
         if data.get('src_node_id'):
             if len(data.get('src_node_id')) <= 12:
-                where.append(' src_node_id regexp "{0}" '.format(data.get('src_node_id')))
+                where.append(' src_node_id regexp "^{0}" '.format(data.get('src_node_id')))
             else:
                 where.append(' src_node_id = "{0}" '.format(data.get('src_node_id')))
 
         if data.get('dest_node_id'):
             if len(data.get('dest_node_id')) <= 20:
-                where.append(' dest_node_id regexp "{0}" '.format(data.get('dest_node_id')))
+                where.append(' dest_node_id regexp "^{0}" '.format(data.get('dest_node_id')))
             else:
                 where.append(' dest_node_id = "{0}" '.format(data.get('dest_node_id')))
 
@@ -109,7 +109,7 @@ class PacketRecvInfoSql(Bean):
 
         if data.get('recv_node_id'):
             if len(data.get('recv_node_id')) <= 12:
-                where.append(' recv_node_id regexp "{0}" '.format(data.get('recv_node_id')))
+                where.append(' recv_node_id regexp "^{0}" '.format(data.get('recv_node_id')))
             else:
                 where.append(' recv_node_id = "{0}" '.format(data.get('recv_node_id')))
 
@@ -167,7 +167,7 @@ class NetworkInfoSql(Bean):
 
         if data.get('network_id'):
             if len(data.get('network_id')) <= 20:
-                where.append(' network_id regexp "{0}" '.format(data.get('network_id')))
+                where.append(' network_id regexp "^{0}" '.format(data.get('network_id')))
             else:
                 where.append(' network_id = "{0}" '.format(data.get('network_id')))
 
@@ -218,7 +218,7 @@ class DropRateInfoSql(Bean):
 
         if data.get('network_id'):
             if len(data.get('network_id')) <= 20:
-                where.append(' network_id regexp "{0}" '.format(data.get('network_id')))
+                where.append(' network_id regexp "^{0}" '.format(data.get('network_id')))
             else:
                 where.append(' network_id = "{0}" '.format(data.get('network_id')))
 
