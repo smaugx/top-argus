@@ -75,9 +75,9 @@ class RedisQueue(object):
             msg_hash = int(alarm_item.get('alarm_content').get('uniq_chain_hash'))
         elif alarm_type == 'networksize':
             node_id = alarm_item.get('alarm_content').get('node_id') 
-            network_id = node_id[:17]  # head 8 * 2 bytes
-            if network_id.startswith('010000'):
-                network_id = '010000'
+            network_id = node_id[:12]  # head 8 * 2 bytes
+            if network_id.startswith('ffffff'):
+                network_id = 'ffffff'
             msg_hash = int(int(hashlib.sha256(network_id.encode('utf-8')).hexdigest(), 16) % 10**8)
         elif alarm_type == 'system':
             node_ip = '127.0.0.1:9000'

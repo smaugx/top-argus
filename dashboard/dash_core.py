@@ -435,7 +435,7 @@ class Dash(object):
 
     def get_network_num(self,data,limit = 100, page = 1):
         if data.get('network_id'):
-            data['network_id'] = data.get('network_id')[:13]
+            data['network_id'] = data.get('network_id')[:12]
         results = self.load_db_network_id_num(data, limit = limit, page = page)
         return results
         
@@ -482,7 +482,7 @@ class Dash(object):
 
         network_num = None
         if data.get('network_id'):
-            network_id = data.get('network_id')[:13]
+            network_id = data.get('network_id')[:12]
             if network_id not in self.network_id_num_:
                 vs = self.load_db_network_id_num(data = {})
                 for item in vs:

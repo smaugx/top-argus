@@ -99,7 +99,7 @@ class NetworkSizeAlarmConsumer(object):
         return self.network_ids_[network_id]['size']
 
     def get_node_ip(self, node_id):
-        network_id = node_id[:13]  # head 3 + 1 + 1 + 1 = 6 bytes, that is 6 * 2 = 12 char of prefix.
+        network_id = node_id[:12]  # head 3 + 1 + 1 + 1 = 6 bytes, that is 6 * 2 = 12 char of prefix.
         if network_id.startswith('ffffff'):
             network_id = 'ffffff'
         if network_id not in self.network_ids_:
@@ -144,7 +144,7 @@ class NetworkSizeAlarmConsumer(object):
         # common/node_role.json: 'network_focus_on': ['000000010000','000000020000', '0000000f0101', '0000000e0101', '0000000001'], # src or dest: rec;zec;edg;arc;aud/val
         node_id = content.get('node_id')
         node_ip = content.get('node_ip')  # ip:port
-        network_id = node_id[:13]  # head 3 + 1 + 1 + 1 = 6 bytes, that is 6 * 2 = 12 char of prefix.
+        network_id = node_id[:12]  # head 3 + 1 + 1 + 1 = 6 bytes, that is 6 * 2 = 12 char of prefix.
 
 
         # attention: specially for kroot_id 010000
@@ -306,7 +306,7 @@ class NetworkSizeAlarmConsumer(object):
             return  False
         node_id = content.get('node_id')
         node_ip = content.get('node_ip')  # ip:port
-        network_id = node_id[:13]  # head 3 + 1 + 1 + 1 = 6 bytes, that is 6 * 2 = 12 char of prefix.
+        network_id = node_id[:12]  # head 3 + 1 + 1 + 1 = 6 bytes, that is 6 * 2 = 12 char of prefix.
         if network_id.startswith('ffffff'):
             network_id = 'ffffff'
         net_type = 'root'
@@ -446,7 +446,7 @@ class NetworkSizeAlarmConsumer(object):
             if not net_id_list:
                 continue
             for node_id in net_id_list:
-                network_id = node_id[:13]
+                network_id = node_id[:12]
                 if not self.network_id_num_.get(network_id):
                     continue
                 network_num = self.network_id_num_.get(network_id).get('network_num')

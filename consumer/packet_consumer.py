@@ -219,7 +219,7 @@ class PacketAlarmConsumer(object):
 
             networksize = 1
             if cache_packet_info.get('broadcast') == 1:
-                networksize = self.get_networksize_from_remote(cache_packet_info['dest_node_id'][:13])
+                networksize = self.get_networksize_from_remote(cache_packet_info['dest_node_id'][:12])
             cache_packet_info['dest_networksize'] = networksize
 
 
