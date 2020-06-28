@@ -5,7 +5,7 @@ import os
 now_dir = os.path.dirname(os.path.abspath(__file__))
 base_dir = os.path.dirname(now_dir)  #parent dir
 activate_this = '%s/vvlinux/bin/activate_this.py' % base_dir
-exec(open(activate_this).read())
+#exec(open(activate_this).read())
 
 import sys
 sys.path.insert(0, base_dir)
@@ -314,7 +314,7 @@ def network_query():
             }
 
     history_max_node_size = 0
-    if network_id.startswith('0100'):  # get real node
+    if network_id.startswith('ffffff'):  # get real node
         ndata = {
                 'simple': 'true',
                 }
