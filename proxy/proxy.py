@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 #-*- coding:utf8 -*-
 
-import os 
-now_dir = os.path.dirname(os.path.abspath(__file__))
-base_dir = os.path.dirname(now_dir)  #parent dir
-activate_this = '%s/vvlinux/bin/activate_this.py' % base_dir
-exec(open(activate_this).read())
-
-import sys
-sys.path.insert(0, base_dir)
-
 from flask import Flask ,request, url_for, render_template,jsonify
 import sys
 import json
 import requests
 import copy
+
+import os
+project_path = os.path.dirname(os.path.abspath(__file__))
+log_path = os.path.join(project_path, "log/topargus-proxy.log")
+os.environ['LOG_PATH'] =  log_path
 from common.slogging import slog
+import common.slogging as slogging
+
 import common.my_queue as my_queue
 import common.config as sconfig
 
@@ -151,6 +149,7 @@ def alarm_report():
 
 def run():
     slog.info('proxy start...')
+    slogging.start_log_monitor()
     #app.run(host="0.0.0.0", port= 9091, debug=True)
     app.run(host="127.0.0.1", port= 9091, debug=True)
     #app.run()

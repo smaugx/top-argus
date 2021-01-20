@@ -1,16 +1,6 @@
 #!/usr/bin/env python
 #-*- coding:utf8 -*-
 
-import os
-now_dir = os.path.dirname(os.path.abspath(__file__))
-base_dir = os.path.dirname(now_dir)  #parent dir
-activate_this = '%s/vvlinux/bin/activate_this.py' % base_dir
-#exec(open(activate_this).read())
-
-import sys
-sys.path.insert(0, base_dir)
-
-
 from flask import Flask ,request, url_for, render_template,jsonify
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -26,7 +16,13 @@ import copy
 import threading
 import dash_core
 import dash_user
+import os
+project_path = os.path.dirname(os.path.abspath(__file__))
+log_path = os.path.join(project_path, "log/topargus-agent.log")
+os.environ['LOG_PATH'] =  log_path
+import common.slogging as slogging
 from common.slogging import slog
+
 from common.my_queue import TopArgusRedis
 import common.config as sconfig
 
@@ -591,6 +587,7 @@ def network_num_query():
 
 
 def run():
+    slogging.start_log_monitor()
     app.run(host="0.0.0.0", port= 8080, debug=True)
     #app.run()
 

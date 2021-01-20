@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 #-*- coding:utf8 -*-
 
-import os 
-now_dir = os.path.dirname(os.path.abspath(__file__))
-base_dir = os.path.dirname(now_dir)  #parent dir
-activate_this = '%s/vvlinux/bin/activate_this.py' % base_dir
-exec(open(activate_this).read())
-
 import sys
-sys.path.insert(0, base_dir)
 import json
 import argparse
 
+import os
+project_path = os.path.dirname(os.path.abspath(__file__))
+log_path = os.path.join(project_path, "log/topargus-consumer.log")
+os.environ['LOG_PATH'] =  log_path
+import common.slogging as slogging
 from common.slogging import slog
+
 import common.my_queue as my_queue
 import common.config as sconfig
 from multiprocessing import Process
@@ -95,4 +94,5 @@ if __name__ == '__main__':
     alarm_type = args.type
     alarm_env = args.env
     print('type:{0} env:{1}'.format(alarm_type,alarm_env))
+    slogging.start_log_monitor()
     run(alarm_type, alarm_env)

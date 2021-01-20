@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS packet_recv_info_table(
 DROP TABLE IF EXISTS network_info_table;
 CREATE TABLE IF NOT EXISTS network_info_table(
                 network_id VARCHAR(20) NOT NULL,
-                network_info MEDIUMTEXT DEFAULT "",
+                network_info MEDIUMTEXT,
                 PRIMARY KEY (network_id)
 )
         ENGINE =InnoDB
