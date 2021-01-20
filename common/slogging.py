@@ -6,11 +6,7 @@ import time
 import threading
 import common.config as sconfig
 
-if not os.getenv('LOG_PATH'):
-    print("ENV LOG_PATH invalid")
-    sys.exit(2)
-
-log_path = os.getenv('LOG_PATH') 
+log_path = os.getenv('LOG_PATH') or '/dev/null'
 if not os.path.exists(os.path.dirname(log_path)):
     os.mkdir(os.path.dirname(log_path))
 

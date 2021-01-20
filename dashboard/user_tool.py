@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 #-*- coding:utf8 -*-
 
-import os
-import sys
+import os,sys
+project_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(project_path))
+
 
 import argparse
 import random
 from werkzeug.security import generate_password_hash, check_password_hash
 from database.user_sql import UserInfoSql
-from common.slogging import slog
 
 user_info_sql = UserInfoSql()
 
