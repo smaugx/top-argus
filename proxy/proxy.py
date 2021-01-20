@@ -9,10 +9,12 @@ import copy
 
 import os
 project_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(project_path))
 log_path = os.path.join(project_path, "log/topargus-proxy.log")
 os.environ['LOG_PATH'] =  log_path
 from common.slogging import slog
 import common.slogging as slogging
+
 
 import common.my_queue as my_queue
 import common.config as sconfig
@@ -150,7 +152,6 @@ def alarm_report():
 def run():
     slog.info('proxy start...')
     slogging.start_log_monitor()
-    #app.run(host="0.0.0.0", port= 9091, debug=True)
     app.run(host="127.0.0.1", port= 9091, debug=True)
     #app.run()
     return

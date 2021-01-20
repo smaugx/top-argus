@@ -41,7 +41,7 @@ gconfig = {
 
 def update_config():
     global gconfig
-    url = 'http://127.0.0.1:9090/api/config/'
+    url = 'http://127.0.0.1:9091/api/config/'
     my_headers = {
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36',
             'Content-Type': 'application/json;charset=UTF-8',
@@ -66,7 +66,7 @@ def update_config():
         return False
 
 def get_config():
-    url = 'http://127.0.0.1:9090/api/config/'
+    url = 'http://127.0.0.1:9091/api/config/'
     my_headers = {
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36',
             'Content-Type': 'application/json;charset=UTF-8',

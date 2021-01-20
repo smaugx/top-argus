@@ -7,6 +7,7 @@ import argparse
 
 import os
 project_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(project_path))
 log_path = os.path.join(project_path, "log/topargus-consumer.log")
 os.environ['LOG_PATH'] =  log_path
 import common.slogging as slogging

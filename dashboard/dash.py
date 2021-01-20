@@ -1,10 +1,21 @@
 #!/usr/bin/env python
 #-*- coding:utf8 -*-
 
+
+import os,sys
+project_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(project_path))
+
+log_path = os.path.join(project_path, "log/topargus-dash.log")
+os.environ['LOG_PATH'] =  log_path
+import common.slogging as slogging
+from common.slogging import slog
+
+
+
 from flask import Flask ,request, url_for, render_template,jsonify
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
-import sys
 import json
 import requests
 import redis
@@ -16,13 +27,6 @@ import copy
 import threading
 import dash_core
 import dash_user
-import os
-project_path = os.path.dirname(os.path.abspath(__file__))
-log_path = os.path.join(project_path, "log/topargus-agent.log")
-os.environ['LOG_PATH'] =  log_path
-import common.slogging as slogging
-from common.slogging import slog
-
 from common.my_queue import TopArgusRedis
 import common.config as sconfig
 
