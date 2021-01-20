@@ -12,9 +12,9 @@ from database.packet_sql import PacketInfoSql, PacketRecvInfoSql,NetworkInfoSql
 from common.slogging import slog
 
 
-#{"local_node_id": "ffffff5a10569d206a82b9f9555c2f53000000008f4a9aade07c40091694973c5b327842", "uniq_chain_hash": "416514318958495", "chain_hash": "434300", "chain_msgid": "655361", "chain_msg_size": "9184", "send_timestamp": "1573547749649", "src_node_id": "", "dest_node_id": "000000010000ffffffffffffffffffff00000000edb57e31dc005ec08774db4439a479ef", "is_root": "0", "broadcast": "0"}
+#{"local_gid": "ffffff5a10569d206a82b9f9555c2f53000000008f4a9aade07c40091694973c5b327842", "uniq_chain_hash": "416514318958495", "chain_hash": "434300", "chain_msgid": "655361", "chain_msg_size": "9184", "send_timestamp": "1573547749649", "src_node_id": "", "dest_node_id": "000000010000ffffffffffffffffffff00000000edb57e31dc005ec08774db4439a479ef", "is_root": "0", "broadcast": "0"}
 
-#{"local_node_id": "ffffff5a10569d206a82b9f9555c2f53000000008f4a9aade07c40091694973c5b327842", "uniq_chain_hash": "1146587997", "chain_hash":"79385948","chain_msgid": "917505", "packet_size": "602", "chain_msg_size": "189", "hop_num": "1", "recv_timestamp": "1573547749394", "src_node_id": "ffffff5a10569d206a82b9f9555c2f53000000008f4a9aade07c40091694973c5b327842", "dest_node_id": "000000010000ffffffffffffffffffff00000000da764df75d3f6b16514039e3a0833371", "is_root": "0", "broadcast": "0"}
+#{"local_gid": "ffffff5a10569d206a82b9f9555c2f53000000008f4a9aade07c40091694973c5b327842", "uniq_chain_hash": "1146587997", "chain_hash":"79385948","chain_msgid": "917505", "packet_size": "602", "chain_msg_size": "189", "hop_num": "1", "recv_timestamp": "1573547749394", "src_node_id": "ffffff5a10569d206a82b9f9555c2f53000000008f4a9aade07c40091694973c5b327842", "dest_node_id": "000000010000ffffffffffffffffffff00000000da764df75d3f6b16514039e3a0833371", "is_root": "0", "broadcast": "0"}
 
 class PacketAlarmConsumer(object):
     def __init__(self, q, queue_key_list, alarm_env = 'test'):
@@ -171,7 +171,7 @@ class PacketAlarmConsumer(object):
                     return False
     
                 if self.packet_recv_info_flag_:
-                    cache_packet_info['recv_nodes_id'].append(packet_info.get('local_node_id'))
+                    cache_packet_info['recv_nodes_id'].append(packet_info.get('local_gid'))
                     cache_packet_info['recv_nodes_ip'].append(packet_info.get('public_ip'))
                 cache_packet_info['packet_size'] = (cache_packet_info.get('packet_size') * cache_packet_info.get('recv_nodes_num') + int(packet_info.get('packet_size'))) / (cache_packet_info.get('recv_nodes_num') + 1)
                 cache_packet_info['recv_nodes_num'] += 1
@@ -206,7 +206,7 @@ class PacketAlarmConsumer(object):
     
         else:  # this is send info
             cache_packet_info =  copy.deepcopy(self.template_packet_info_)
-            cache_packet_info['send_node_id'] = packet_info.get('local_node_id')
+            cache_packet_info['send_node_id'] = packet_info.get('local_gid')
             cache_packet_info['uniq_chain_hash'] = int(packet_info.get('uniq_chain_hash'))
             cache_packet_info['chain_hash'] = int(packet_info.get('chain_hash'))
             cache_packet_info['chain_msgid'] = int(packet_info.get('chain_msgid'))
@@ -239,7 +239,7 @@ class PacketAlarmConsumer(object):
                     return False
     
                 if self.packet_recv_info_flag_:
-                    cache_packet_info['recv_nodes_id'].append(packet_info.get('local_node_id'))
+                    cache_packet_info['recv_nodes_id'].append(packet_info.get('local_gid'))
                     cache_packet_info['recv_nodes_ip'].append(packet_info.get('public_ip'))
                 cache_packet_info['packet_size'] = (cache_packet_info.get('packet_size') * cache_packet_info.get('recv_nodes_num') + int(packet_info.get('packet_size'))) / (cache_packet_info.get('recv_nodes_num') + 1)
                 cache_packet_info['recv_nodes_num'] += 1
