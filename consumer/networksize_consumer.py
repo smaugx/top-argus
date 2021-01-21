@@ -141,13 +141,12 @@ class NetworkSizeAlarmConsumer(object):
     def networksize_alarm_ent(self, content):
         if not content:
             return False
-        # common/node_role.json: 'network_focus_on': ['000000010000','000000020000', '0000000f0101', '0000000e0101', '0000000001'], # src or dest: rec;zec;edg;arc;aud/val
+        # common/node_role.json: 'network_focus_on': ['ff0000010000','ff0000020000', 'ff00000f0101', 'ff00000e0101', 'ff00000001'], # src or dest: rec;zec;edg;arc;aud/val
         node_id = content.get('node_id')
         node_ip = content.get('node_ip')  # ip:port
         network_id = node_id[:12]  # head 3 + 1 + 1 + 1 = 6 bytes, that is 6 * 2 = 12 char of prefix.
 
 
-        # attention: specially for kroot_id 010000
         if network_id.startswith('ffffff'):
             network_id = 'ffffff'
         node_id_status = content.get('node_id_status')
@@ -224,15 +223,15 @@ class NetworkSizeAlarmConsumer(object):
             return
 
         net_type = ''
-        if network_id.startswith('000000010000'):
+        if network_id.startswith('ff0000010000'):
             net_type = 'rec'
-        elif network_id.startswith('000000020000'):
+        elif network_id.startswith('ff0000020000'):
             net_type = 'zec'
-        elif network_id.startswith('0000000f0101'):
+        elif network_id.startswith('ff00000f0101'):
             net_type = 'edg'
-        elif network_id.startswith('0000000e0101'):
+        elif network_id.startswith('ff00000e0101'):
             net_type = 'arc'
-        elif network_id.startswith('0000000001'):
+        elif network_id.startswith('ff00000001'):
             tmp_group_id = int(network_id[-2:], 16)
             if 0 <= tmp_group_id and tmp_group_id <= 63:
                 # adv group_id: [0, 64)
@@ -299,7 +298,7 @@ class NetworkSizeAlarmConsumer(object):
         # key is public_ip_port, value is {'public_ip_port':'127.0.0.1:9000','rec':[],'zec':[],....,'val':[]} 
         # self.node_info_  = {}
 
-        # common/node_role.json: 'network_focus_on': ['000000010000','000000020000', '0000000f0101', '0000000e0101', '0000000001'], # src or dest: rec;zec;edg;arc;aud/val
+        # common/node_role.json: 'network_focus_on': ['ff0000010000','ff0000020000', 'ff00000f0101', 'ff00000e0101', 'ff00000001'], # src or dest: rec;zec;edg;arc;aud/val
         '''
 
         if not content:
@@ -310,15 +309,15 @@ class NetworkSizeAlarmConsumer(object):
         if network_id.startswith('ffffff'):
             network_id = 'ffffff'
         net_type = 'root'
-        if network_id.startswith('000000010000'):
+        if network_id.startswith('ff0000010000'):
             net_type = 'rec'
-        elif network_id.startswith('000000020000'):
+        elif network_id.startswith('ff0000020000'):
             net_type = 'zec'
-        elif network_id.startswith('0000000f0101'):
+        elif network_id.startswith('ff00000f0101'):
             net_type = 'edg'
-        elif network_id.startswith('0000000e0101'):
+        elif network_id.startswith('ff00000e0101'):
             net_type = 'arc'
-        elif network_id.startswith('0000000001'):
+        elif network_id.startswith('ff00000001'):
             tmp_group_id = int(network_id[-2:], 16)
             if 0 <= tmp_group_id and tmp_group_id <= 63:
                 # adv group_id: [0, 64)
