@@ -19,7 +19,7 @@ MarkupSafe==1.1.1
 pathtools==0.1.2
 powerline-status==2.7
 PyMySQL==0.9.3
-PyYAML==5.1.2
+PyYAML==5.4
 redis==3.3.11
 requests==2.22.0
 scons==3.0.1
